@@ -12,7 +12,7 @@
     <link rel="manifest" href="./manifest.json">
 
     <!-- ===========================================================
-         SUPABASE — CARREGAMENTO 100% GARANTIDO
+         SUPABASE — Inicialização Segura
     ============================================================ -->
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -24,12 +24,10 @@
             const supabaseKey =
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjZHp3c3dqYmh3a3lmZHFwbmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NDExNjEsImV4cCI6MjA3OTMxNzE2MX0.PX6lM9MTiu1TcffOiGKw2jVQkl8x1pZBRY8HcDHseMs";
 
-            // Supabase seguro, carregado após CDN
+            // Criar cliente global Supabase
             window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
         });
     </script>
-
 </head>
 
 <body>
@@ -60,14 +58,16 @@
     <div id="mes-ao-select">
         <select id="sel-mes" onchange="APP.mesAtual=this.value; DASHBOARD.load()">
             <script>
-                for (let m=1; m<=12; m++) document.write(`<option value="${m}">${m}</option>`);
+                for (let m=1; m<=12; m++)
+                    document.write(`<option value="${m}">${m}</option>`);
             </script>
         </select>
 
         <select id="sel-ano" onchange="APP.anoAtual=this.value; DASHBOARD.load()">
             <script>
                 const ano = new Date().getFullYear();
-                for (let a=ano-5; a<=ano+3; a++) document.write(`<option value="${a}">${a}</option>`);
+                for (let a = ano - 5; a <= ano + 3; a++)
+                    document.write(`<option value="${a}">${a}</option>`);
             </script>
         </select>
     </div>
@@ -76,20 +76,62 @@
     <div id="dashboard-ultimos"></div>
 </div>
 
-<!-- (RESTO DAS PÁGINAS IGUAL A ANTES — NÃO ALTERADO) -->
+<!-- ===========================================================
+     OUTRAS PÁGINAS (DÉBITOS, METAS, ADMIN...)
+=========================================================== -->
+
+<div class="page hidden" id="page-debitos">
+    <h2>Débitos Diretos</h2>
+    <div id="debitos-lista"></div>
+    <button onclick="DEBITOS.abrirAdicionar()">Adicionar Débito</button>
+</div>
+
+<div class="page hidden" id="page-metas">
+    <h2>Metas</h2>
+    <div id="metas-lista"></div>
+    <button onclick="METAS.abrirAdicionar()">Adicionar Meta</button>
+</div>
+
+<div class="page hidden" id="page-conta">
+    <h2>Conta</h2>
+    <div class="admin-card">
+        <p><b>User:</b> <span id="conta-user"></span></p>
+        <p><b>Role:</b> <span id="conta-role"></span></p>
+        <button class="btn-danger" onclick="APP.appLogout()">Logout</button>
+    </div>
+
+    <div id="admin-panel" class="hidden">
+        <h3>Painel de Administração</h3>
+        <button onclick="ADMIN.showUsers()">Gerir Utilizadores</button>
+        <button onclick="ADMIN.listCategorias()">Gerir Categorias</button>
+        <button onclick="ADMIN.showOrcamentos()">Ver Orçamentos</button>
+    </div>
+</div>
+
+<div id="admin-modais"></div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav">
+    <button data-tab="dashboard">Dashboard</button>
+    <button data-tab="debitos">Débitos</button>
+    <button data-tab="metas">Metas</button>
+    <button data-tab="conta">Conta</button>
+</div>
 
 <!-- ===========================================================
-     JS FINAIS — carregados com defer
+     SCRIPTS (todos com defer)
 =========================================================== -->
 <script defer src="./app.js"></script>
 <script defer src="./auth.js"></script>
 <script defer src="./db.js"></script>
-script defer src="./dashboard.js"></script>
+<script defer src="./dashboard.js"></script> <!-- CORRIGIDO -->
 <script defer src="./debitos.js"></script>
 <script defer src="./metas.js"></script>
 <script defer src="./admin.js"></script>
 
-<!-- SERVICE WORKER -->
+<!-- ===========================================================
+     SERVICE WORKER (GitHub Pages Ready)
+=========================================================== -->
 <script defer>
     if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("./service-worker.js");
@@ -98,4 +140,3 @@ script defer src="./dashboard.js"></script>
 
 </body>
 </html>
-
