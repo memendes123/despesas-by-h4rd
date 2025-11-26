@@ -1,5 +1,5 @@
 /* ===========================================================
-   DEBITOS.JS — V10 FINAL
+   DEBITOS.JS — V12 FINAL CORRIGIDO
    Gestão completa de débitos diretos por utilizador
 =========================================================== */
 
@@ -10,12 +10,17 @@ const DEBITOS = {
     ============================================================ */
     async load() {
 
+        if (!APP.userId) {
+            console.warn("Sem sessão ativa (DEBITOS.load)");
+            return;
+        }
+
         const lista = document.getElementById("debitos-lista");
         lista.innerHTML = "A carregar...";
 
         const debitos = await DB.getDebitos();
 
-        if (!debitos.length) {
+        if (!debitos || debitos.length === 0) {
             lista.innerHTML = "<p>Sem débitos diretos.</p>";
             return;
         }
@@ -52,6 +57,11 @@ const DEBITOS = {
        Abrir modal para adicionar
     ============================================================ */
     abrirAdicionar() {
+        if (!APP.userId) {
+            alert("É necessário iniciar sessão.");
+            return;
+        }
+
         document.getElementById("modal-debito").classList.remove("hidden");
     },
 
@@ -59,6 +69,7 @@ const DEBITOS = {
     fecharAdicionar() {
         document.getElementById("modal-debito").classList.add("hidden");
 
+        // limpar campos
         document.getElementById("deb-nome").value = "";
         document.getElementById("deb-valor").value = "";
         document.getElementById("deb-dia").value = "";
@@ -72,6 +83,11 @@ const DEBITOS = {
     ============================================================ */
     async adicionarDebito() {
 
+        if (!APP.userId) {
+            alert("Sessão expirada. Faça login novamente.");
+            return;
+        }
+
         const nome = document.getElementById("deb-nome").value.trim();
         const valor = document.getElementById("deb-valor").value;
         const dia = document.getElementById("deb-dia").value;
@@ -83,7 +99,7 @@ const DEBITOS = {
             return;
         }
 
-        await DB.addDebito({
+        const { error } = await DB.addDebito({
             nome,
             valor,
             dia,
@@ -91,10 +107,16 @@ const DEBITOS = {
             fim: fim || null
         });
 
+        if (error) {
+            console.error("Erro ao adicionar débito:", error);
+            alert("Erro ao guardar o débito.");
+            return;
+        }
+
         alert("Débito adicionado com sucesso.");
 
         DEBITOS.fecharAdicionar();
         DEBITOS.load();
-    },
+    }
 
 };
