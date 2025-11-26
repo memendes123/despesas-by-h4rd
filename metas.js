@@ -1,5 +1,5 @@
 /* ===========================================================
-   METAS.JS — V10 FINAL
+   METAS.JS — V12 FINAL CORRIGIDO
    Gestão de metas do utilizador
 =========================================================== */
 
@@ -10,12 +10,17 @@ const METAS = {
     ============================================================ */
     async load() {
 
+        if (!APP.userId) {
+            console.warn("Sem sessão ativa (METAS.load)");
+            return;
+        }
+
         const box = document.getElementById("metas-lista");
         box.innerHTML = "A carregar...";
 
         const metas = await DB.getMetas();
 
-        if (!metas.length) {
+        if (!metas || metas.length === 0) {
             box.innerHTML = "<p>Sem metas registadas.</p>";
             return;
         }
@@ -42,20 +47,29 @@ const METAS = {
         });
 
         html += "</table>";
-
         box.innerHTML = html;
     },
 
 
     /* ===========================================================
-       Abrir modal para adicionar meta
+       Abrir modal
     ============================================================ */
     abrirAdicionar() {
+
+        if (!APP.userId) {
+            alert("É necessário iniciar sessão.");
+            return;
+        }
+
         document.getElementById("modal-meta").classList.remove("hidden");
     },
 
 
+    /* ===========================================================
+       Fechar modal + limpar inputs
+    ============================================================ */
     fecharAdicionar() {
+
         document.getElementById("modal-meta").classList.add("hidden");
 
         document.getElementById("meta-nome").value = "";
@@ -66,9 +80,14 @@ const METAS = {
 
 
     /* ===========================================================
-       Guardar nova meta
+       Adicionar nova meta
     ============================================================ */
     async adicionar() {
+
+        if (!APP.userId) {
+            alert("Sessão expirada. Faça login novamente.");
+            return;
+        }
 
         const nome = document.getElementById("meta-nome").value.trim();
         const objetivo = document.getElementById("meta-objetivo").value;
@@ -80,17 +99,23 @@ const METAS = {
             return;
         }
 
-        await DB.addMeta({
+        const { error } = await DB.addMeta({
             nome,
             objetivo,
             inicio: inicio || null,
             fim: fim || null
         });
 
+        if (error) {
+            console.error("Erro ao adicionar meta:", error);
+            alert("Erro ao guardar a meta.");
+            return;
+        }
+
         alert("Meta adicionada com sucesso!");
 
         METAS.fecharAdicionar();
         METAS.load();
-    },
+    }
 
 };
