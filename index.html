@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Despesas — Helder & Goreti</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="ui.css">
+
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Supabase v2 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        const supabaseUrl = "https://wcdzwswjbhwkyfdqpner.supabase.co";
+		const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjZHp3c3dqYmh3a3lmZHFwbmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NDExNjEsImV4cCI6MjA3OTMxNzE2MX0.PX6lM9MTiu1TcffOiGKw2jVQkl8x1pZBRY8HcDHseMs";
+
+		const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    </script>
+
+</head>
+
+<body>
+
+<!-- ===========================================================
+     LOGIN
+=========================================================== -->
+<div class="page" id="page-login">
+    <div id="login-box">
+        <h2>Entrar</h2>
+
+        <input id="login-user" placeholder="username" autocomplete="off">
+        <input id="login-pass" type="password" placeholder="password">
+
+        <button onclick="APP.appLogin(
+            document.getElementById('login-user').value,
+            document.getElementById('login-pass').value
+        )">Entrar</button>
+    </div>
+</div>
+
+
+<!-- ===========================================================
+     DASHBOARD
+=========================================================== -->
+<div class="page hidden" id="page-dashboard">
+    <h2>Dashboard</h2>
+
+    <div id="mes-ano-select">
+        <select id="sel-mes" onchange="APP.mesAtual=this.value; DASHBOARD.load()">
+            <script>
+            for (let m=1; m<=12; m++) {
+                document.write(`<option value="${m}">${m}</option>`);
+            }
+            </script>
+        </select>
+
+        <select id="sel-ano" onchange="APP.anoAtual=this.value; DASHBOARD.load()">
+            <script>
+            let ano = new Date().getFullYear();
+            for (let a=ano-5; a<=ano+3; a++) {
+                document.write(`<option value="${a}">${a}</option>`);
+            }
+            </script>
+        </select>
+    </div>
+
+    <div id="dashboard-resumo"></div>
+    <div id="dashboard-ultimos"></div>
+</div>
+
+
+<!-- ===========================================================
+     DÉBITOS DIRETOS
+=========================================================== -->
+<div class="page hidden" id="page-debitos">
+    <h2>Débitos Diretos</h2>
+    <div id="debitos-lista"></div>
+    <button onclick="DEBITOS.abrirAdicionar()">Adicionar Débito</button>
+</div>
+
+<!-- MODAL DÉBITO -->
+<div class="modal hidden" id="modal-debito">
+    <div class="modal-content">
+        <h3>Novo Débito</h3>
+
+        <input id="deb-nome" placeholder="Nome">
+        <input id="deb-valor" placeholder="Valor (€)" type="number">
+        <input id="deb-dia" placeholder="Dia" type="number">
+
+        <label>Início:</label>
+        <input id="deb-inicio" type="date">
+
+        <label>Fim:</label>
+        <input id="deb-fim" type="date">
+
+        <button class="btn-success" onclick="DEBITOS.adicionarDebito()">Guardar</button>
+        <button class="btn-danger" onclick="DEBITOS.fecharAdicionar()">Cancelar</button>
+    </div>
+</div>
+
+
+<!-- ===========================================================
+     METAS
+=========================================================== -->
+<div class="page hidden" id="page-metas">
+    <h2>Metas</h2>
+    <div id="metas-lista"></div>
+    <button onclick="METAS.abrirAdicionar()">Adicionar Meta</button>
+</div>
+
+<!-- MODAL META -->
+<div class="modal hidden" id="modal-meta">
+    <div class="modal-content">
+        <h3>Nova Meta</h3>
+
+        <input id="meta-nome" placeholder="Nome">
+        <input id="meta-objetivo" placeholder="Valor alvo (€)" type="number">
+
+        <label>Início:</label>
+        <input id="meta-inicio" type="date">
+
+        <label>Fim:</label>
+        <input id="meta-fim" type="date">
+
+        <button class="btn-success" onclick="METAS.adicionar()">Guardar</button>
+        <button class="btn-danger" onclick="METAS.fecharAdicionar()">Cancelar</button>
+    </div>
+</div>
+
+
+<!-- ===========================================================
+     CONTA / ADMIN
+=========================================================== -->
+<div class="page hidden" id="page-conta">
+    <h2>Conta</h2>
+
+    <div class="admin-card">
+        <p><b>User:</b> <span id="conta-user"></span></p>
+        <p><b>Role:</b> <span id="conta-role"></span></p>
+        <button class="btn-danger" onclick="APP.appLogout()">Logout</button>
+    </div>
+
+    <div id="admin-panel" class="hidden">
+        <h3>Painel de Administração</h3>
+
+        <button onclick="ADMIN.showUsers()">Gerir Utilizadores</button>
+        <button onclick="ADMIN.listCategorias()">Gerir Categorias</button>
+        <button onclick="ADMIN.showOrcamentos()">Ver Orçamentos</button>
+    </div>
+</div>
+
+<!-- MODAIS ADMIN -->
+<div id="admin-modais"></div>
+
+
+<!-- ===========================================================
+     BOTTOM NAV
+=========================================================== -->
+<div class="bottom-nav">
+    <button data-tab="dashboard">Dashboard</button>
+    <button data-tab="debitos">Débitos</button>
+    <button data-tab="metas">Metas</button>
+    <button data-tab="conta">Conta</button>
+</div>
+
+
+<!-- ===========================================================
+     SCRIPTS
+=========================================================== -->
+<script src="app.js"></script>
+<script src="auth.js"></script>
+<script src="db.js"></script>
+<script src="dashboard.js"></script>
+<script src="debitos.js"></script>
+<script src="metas.js"></script>
+<script src="admin.js"></script>
+
+<script>
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("service-worker.js");
+    }
+</script>
+
+</body>
+</html>

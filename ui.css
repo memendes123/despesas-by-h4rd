@@ -1,0 +1,213 @@
+/* ===========================================================
+   RESET
+=========================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Inter", sans-serif;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    padding-bottom: 70px; /* espaço para menu inferior */
+}
+
+/* ===========================================================
+   TEMA CLARO / ESCURO AUTOMÁTICO
+=========================================================== */
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg: #f5f5f5;
+        --text: #222;
+        --card: #fff;
+        --border: #ddd;
+        --primary: #3b82f6;
+        --danger: #dc2626;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #121212;
+        --text: #fff;
+        --card: #1e1e1e;
+        --border: #333;
+        --primary: #3b82f6;
+        --danger: #f87171;
+    }
+}
+
+/* ===========================================================
+   PÁGINAS
+=========================================================== */
+.page {
+    display: block;
+    padding: 15px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ===========================================================
+   LOGIN
+=========================================================== */
+#login-box {
+    max-width: 350px;
+    margin: 60px auto;
+    background: var(--card);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+#login-box input {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+}
+
+#login-box button {
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    background: var(--primary);
+    color: white;
+    font-weight: 600;
+}
+
+/* ===========================================================
+   TABELAS
+=========================================================== */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+}
+
+th {
+    background: var(--card);
+    font-weight: 600;
+}
+
+tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* ===========================================================
+   BOTÕES
+=========================================================== */
+button {
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: none;
+    margin-top: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-success {
+    background: var(--primary);
+    color: #fff;
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: #fff;
+}
+
+/* ===========================================================
+   MODAIS
+=========================================================== */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    padding: 30px 10px;
+    display: flex;
+    justify-content: center;
+    overflow-y: auto;
+}
+
+.modal-content {
+    background: var(--card);
+    padding: 20px;
+    width: 100%;
+    max-width: 400px;
+    border-radius: 12px;
+}
+
+/* inputs dentro de modal */
+.modal-content input,
+.modal-content select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* ===========================================================
+   ADMIN CARDS
+=========================================================== */
+.admin-line {
+    padding: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Título admin */
+#admin-panel button {
+    width: 100%;
+    margin-top: 12px;
+}
+
+/* ===========================================================
+   BOTTOM NAV
+=========================================================== */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 58px;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    display: flex;
+}
+
+.bottom-nav button {
+    flex: 1;
+    border-radius: 0;
+    border: none;
+    background: var(--card);
+    color: var(--text);
+    font-size: 14px;
+}
+
+/* botão ativo (opcional, se quiseres ativar via JS) */
+.bottom-nav button.active {
+    background: var(--primary);
+    color: white;
+}
