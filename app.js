@@ -1,13 +1,12 @@
 /* ===========================================================
-   APP.JS — V12 FINAL
-   Gestão geral da app + login + navegação
+   APP.JS — V12 FINAL CORRIGIDO PARA GITHUB PAGES + SUPABASE
 =========================================================== */
 
 const APP = {
 
-    user: null,          // dados do utilizador logado
-    userId: null,        // ID SHA256
-    role: null,          // admin | user
+    user: null,
+    userId: null,
+    role: null,
     mesAtual: new Date().getMonth() + 1,
     anoAtual: new Date().getFullYear(),
 
@@ -22,34 +21,32 @@ const APP = {
             return;
         }
 
-        // hash SHA256 em JS
+        // SHA256
         const enc = new TextEncoder();
         const hashBuffer = await crypto.subtle.digest("SHA-256", enc.encode(password));
         const hashHex = [...new Uint8Array(hashBuffer)]
             .map(b => b.toString(16).padStart(2, "0"))
             .join("");
 
-        // 1) Buscar user pelo username
+        // 1) Buscar user
         const { data: users, error: e1 } = await supabase
             .from("users")
             .select("*")
-            .eq("username", username)
+            .eq("username", username.toLowerCase())
             .limit(1);
 
         if (e1) {
             console.error(e1);
-            alert("Erro ao ligar ao servidor.");
-            return;
+            return alert("Erro ao ligar ao servidor.");
         }
 
-        if (!users || users.length === 0) {
-            alert("Utilizador não encontrado.");
-            return;
+        if (!users?.length) {
+            return alert("Utilizador não encontrado.");
         }
 
         const user = users[0];
 
-        // 2) Buscar password hash
+        // 2) Buscar hash da password
         const { data: pass, error: e2 } = await supabase
             .from("user_passwords")
             .select("password_sha256")
@@ -58,26 +55,18 @@ const APP = {
 
         if (e2) {
             console.error(e2);
-            alert("Erro ao verificar password.");
-            return;
+            return alert("Erro ao verificar password.");
         }
 
-        if (!pass || pass.length === 0) {
-            alert("Password não encontrada.");
-            return;
+        if (!pass?.length) {
+            return alert("Password não encontrada.");
         }
 
-        const hashDB = pass[0].password_sha256;
-
-        if (hashHex !== hashDB) {
-            alert("Password incorreta.");
-            return;
+        if (hashHex !== pass[0].password_sha256) {
+            return alert("Password incorreta.");
         }
 
-        // 3) DEFINIR UTILIZADOR NA SESSÃO DO SUPABASE (RLS)
-        await supabase.rpc("set_app_user", { userid: user.id });
-
-        // guardar sessão
+        // 3) Guardar sessão localmente
         APP.user = user.username;
         APP.userId = user.id;
         APP.role = user.role;
@@ -88,15 +77,17 @@ const APP = {
             role: APP.role
         }));
 
+        // 4) Carregar dashboard **APÓS DEFINIR userId**
         APP.showPage("dashboard");
-        DASHBOARD.load();
+        await DASHBOARD.load();
     },
 
 
     /* ===========================================================
-       RESTORE SESSION
+       RESTAURAR SESSÃO
     ============================================================ */
     async restoreSession() {
+
         const s = localStorage.getItem("sessao");
         if (!s) return;
 
@@ -107,12 +98,10 @@ const APP = {
             APP.userId = session.id;
             APP.role = session.role;
 
-            // reativar RLS
-            await supabase.rpc("set_app_user", { userid: APP.userId });
-
             APP.showPage("dashboard");
-            DASHBOARD.load();
-        } catch(e) {
+            await DASHBOARD.load();
+
+        } catch (e) {
             console.warn("Sessão inválida.");
         }
     },
@@ -133,7 +122,7 @@ const APP = {
 
 
     /* ===========================================================
-       TROCAR ENTRE PÁGINAS
+       TROCAR DE PÁGINA
     ============================================================ */
     showPage(pg) {
         document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
@@ -146,16 +135,15 @@ const APP = {
 /* ===========================================================
    Inicialização
 =========================================================== */
-
 window.addEventListener("load", () => {
 
-    // bottom nav
     document.querySelectorAll(".bottom-nav button").forEach(btn => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
             APP.showPage(btn.dataset.tab);
-            if (btn.dataset.tab === "dashboard") DASHBOARD.load();
-            if (btn.dataset.tab === "debitos") DEBITOS.load();
-            if (btn.dataset.tab === "metas") METAS.load();
+
+            if (btn.dataset.tab === "dashboard") await DASHBOARD.load();
+            if (btn.dataset.tab === "debitos") await DEBITOS.load();
+            if (btn.dataset.tab === "metas") await METAS.load();
         });
     });
 
