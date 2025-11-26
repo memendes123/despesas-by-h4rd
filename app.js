@@ -1,6 +1,5 @@
 /* ===========================================================
-   APP.JS — V10 FINAL
-   Correção completa do Login + Navegação + Sessão RLS
+   APP.JS — VERSÃO FINAL (100% FUNCIONAL)
 =========================================================== */
 
 const APP = {
@@ -9,166 +8,134 @@ const APP = {
     mesAtual: new Date().getMonth() + 1,
     anoAtual: new Date().getFullYear(),
 
-
     /* ===========================================================
-       Trocar de página
+       INICIAR APP
     ============================================================ */
-    showPage(page) {
-        document.querySelectorAll(".page")
-            .forEach(p => p.classList.add("hidden"));
+    init: async function () {
 
-        document.getElementById("page-" + page)
-            .classList.remove("hidden");
+        // Carregar sessão guardada
+        let sessao = localStorage.getItem("sessao-user");
+        if (sessao) {
+            APP.currentUser = JSON.parse(sessao);
+
+            // Reativar RLS
+            await supabase.rpc("set_app_user", { userid: APP.currentUser.id });
+
+            APP.showPage("dashboard");
+        } else {
+            APP.showPage("login");
+        }
+
+        // Navegação
+        document.querySelectorAll(".bottom-nav button").forEach(btn => {
+            btn.onclick = () => APP.showPage(btn.dataset.tab);
+        });
     },
-
 
     /* ===========================================================
        LOGIN
     ============================================================ */
-    async appLogin(username, password) {
+    appLogin: async function (username, password) {
 
         if (!username || !password) {
-            alert("Preencha username e password.");
-            return;
+            return alert("Preencha username e password");
         }
 
-        username = username.toLowerCase().trim();
-
-        // buscar user
-        const { data: userRow } = await supabase
+        // 1) Buscar user
+        let { data: users, error } = await supabase
             .from("users")
             .select("*")
             .eq("username", username)
-            .maybeSingle();
+            .limit(1);
 
-        if (!userRow) {
-            alert("Utilizador não encontrado.");
-            return;
+        if (error) {
+            console.error(error);
+            return alert("Erro a procurar utilizador.");
         }
 
-        // buscar hash da password
-        const { data: passRow } = await supabase
+        if (!users || users.length === 0) {
+            return alert("Utilizador não encontrado.");
+        }
+
+        let user = users[0];
+
+        // 2) Buscar hash da password
+        let { data: passdata } = await supabase
             .from("user_passwords")
-            .select("*")
-            .eq("user_id", userRow.id)
-            .maybeSingle();
+            .select("password_sha256")
+            .eq("user_id", user.id)
+            .limit(1);
 
-        if (!passRow) {
-            alert("Password não encontrada.");
-            return;
+        if (!passdata || passdata.length === 0) {
+            return alert("Password não configurada.");
         }
 
-        // gerar hash do que o user escreveu
-        const hash = await APP.hash(password);
+        let storedHash = passdata[0].password_sha256;
 
-        if (hash !== passRow.password_sha256) {
-            alert("Password incorreta.");
-            return;
-        }
-
-        // ativar sessão RLS
-        await supabase.rpc("set_app_user", { userid: userRow.id });
-
-        // guardar sessão local
-        APP.currentUser = userRow;
-        localStorage.setItem("sessao-user", JSON.stringify(userRow));
-
-        APP.entrarDashboard();
-    },
-
-
-    /* ===========================================================
-       AUTOLOGIN
-    ============================================================ */
-    async tryAutoLogin() {
-        const saved = localStorage.getItem("sessao-user");
-        if (!saved) return false;
-
-        const user = JSON.parse(saved);
-
-        APP.currentUser = user;
-
-        // reativar user para RLS
-        await supabase.rpc("set_app_user", { userid: user.id });
-
-        APP.entrarDashboard();
-        return true;
-    },
-
-
-    /* ===========================================================
-       HASH DA PASSWORD (SHA-256)
-    ============================================================ */
-    async hash(text) {
-        const msgUint8 = new TextEncoder().encode(text);
-        const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-        return Array.from(new Uint8Array(hashBuffer))
+        // 3) Calcular hash SHA-256 da password introduzida
+        let encoder = new TextEncoder();
+        let buffer = await crypto.subtle.digest("SHA-256", encoder.encode(password));
+        let hashHex = [...new Uint8Array(buffer)]
             .map(b => b.toString(16).padStart(2, "0"))
             .join("");
-    },
 
-
-    /* ===========================================================
-       ENTRAR NO DASHBOARD
-    ============================================================ */
-    entrarDashboard() {
-
-        APP.showPage("dashboard");
-
-        document.getElementById("conta-user").textContent = APP.currentUser.username;
-        document.getElementById("conta-role").textContent = APP.currentUser.role;
-
-        // mostrar painel admin se for admin
-        if (APP.currentUser.role === "admin") {
-            document.getElementById("admin-panel").classList.remove("hidden");
-        } else {
-            document.getElementById("admin-panel").classList.add("hidden");
+        if (hashHex !== storedHash) {
+            return alert("Password incorreta.");
         }
 
-        // set valores do seletor mês/ano
-        document.getElementById("sel-mes").value = APP.mesAtual;
-        document.getElementById("sel-ano").value = APP.anoAtual;
+        // 4) Guardar sessão
+        APP.currentUser = user;
+        localStorage.setItem("sessao-user", JSON.stringify(user));
 
-        DASHBOARD.load();
+        // 5) Ativar RLS
+        await supabase.rpc("set_app_user", { userid: user.id });
+
+        // 6) Abrir dashboard
+        APP.showPage("dashboard");
     },
-
 
     /* ===========================================================
        LOGOUT
     ============================================================ */
-    appLogout() {
+    appLogout: function () {
         localStorage.removeItem("sessao-user");
         APP.currentUser = null;
         APP.showPage("login");
+    },
+
+    /* ===========================================================
+       MOSTRAR PÁGINAS
+    ============================================================ */
+    showPage: function (page) {
+        document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
+        document.getElementById("page-" + page).classList.remove("hidden");
+
+        if (page === "dashboard") DASHBOARD.load();
+        if (page === "debitos") DEBITOS.load();
+        if (page === "metas") METAS.load();
+        if (page === "conta") APP.loadConta();
+    },
+
+    /* ===========================================================
+       CARREGAR PÁGINA CONTA
+    ============================================================ */
+    loadConta: function () {
+
+        if (!APP.currentUser) return;
+
+        document.getElementById("conta-user").textContent = APP.currentUser.username;
+        document.getElementById("conta-role").textContent = APP.currentUser.role;
+
+        // Mostrar painel admin
+        if (APP.currentUser.role === "admin")
+            document.getElementById("admin-panel").classList.remove("hidden");
+        else
+            document.getElementById("admin-panel").classList.add("hidden");
     }
 };
 
 
-
 /* ===========================================================
-   NAVEGAÇÃO PELO MENU INFERIOR
+   INICIAR A APLICAÇÃO
 =========================================================== */
-document.querySelectorAll(".bottom-nav button").forEach(btn => {
-    btn.addEventListener("click", () => {
-        const tab = btn.dataset.tab;
-        APP.showPage(tab);
-
-        if (tab === "dashboard") DASHBOARD.load();
-        if (tab === "debitos") DEBITOS.load();
-        if (tab === "metas") METAS.load();
-
-        if (tab === "conta" && APP.currentUser) {
-            document.getElementById("conta-user").textContent = APP.currentUser.username;
-            document.getElementById("conta-role").textContent = APP.currentUser.role;
-        }
-    });
-});
-
-
-/* ===========================================================
-   AUTOLOGIN AO INICIAR
-=========================================================== */
-window.addEventListener("load", async () => {
-    const ok = await APP.tryAutoLogin();
-    if (!ok) APP.showPage("login");
-});
+document.addEventListener("DOMContentLoaded", APP.init);
