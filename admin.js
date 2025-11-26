@@ -6,7 +6,7 @@
 const ADMIN = {
 
     /* ===========================================================
-       UTILIZADORES
+       LISTA DE UTILIZADORES
     ============================================================ */
     async showUsers() {
 
@@ -32,11 +32,14 @@ const ADMIN = {
             </div>
         `;
 
-        // carregar users
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from("users")
             .select("*")
             .order("username");
+
+        if (error) {
+            return alert("Erro ao carregar utilizadores.");
+        }
 
         const lista = data.map(u => `
             <div class="admin-line">
@@ -49,6 +52,9 @@ const ADMIN = {
     },
 
 
+    /* ===========================================================
+       CRIAR UTILIZADOR
+    ============================================================ */
     async criarUser() {
         let username = document.getElementById("new-username").value.trim().toLowerCase();
         let pass = document.getElementById("new-password").value.trim();
@@ -61,18 +67,22 @@ const ADMIN = {
 
         const id = crypto.randomUUID().replace(/-/g, "");
 
-        await supabase.from("users").insert({
+        const { error: e1 } = await supabase.from("users").insert({
             id,
             username,
             role
         });
 
+        if (e1) return alert("Erro ao criar user.");
+
         const hash = await APP.hash(pass);
 
-        await supabase.from("user_passwords").insert({
+        const { error: e2 } = await supabase.from("user_passwords").insert({
             user_id: id,
             password_sha256: hash
         });
+
+        if (e2) return alert("Erro ao gravar password.");
 
         alert("Utilizador criado.");
         ADMIN.showUsers();
@@ -80,7 +90,7 @@ const ADMIN = {
 
 
     /* ===========================================================
-       ALTERAR PASSWORD
+       ALTERAR PASSWORD — ABRIR MODAL
     ============================================================ */
     editarPassword(userid, username) {
 
@@ -102,6 +112,9 @@ const ADMIN = {
     },
 
 
+    /* ===========================================================
+       ALTERAR PASSWORD — GRAVAR
+    ============================================================ */
     async gravarPassword(userid) {
         let p1 = document.getElementById("pass1").value.trim();
         let p2 = document.getElementById("pass2").value.trim();
@@ -113,9 +126,11 @@ const ADMIN = {
 
         const hash = await APP.hash(p1);
 
-        await supabase.from("user_passwords")
+        const { error } = await supabase.from("user_passwords")
             .update({ password_sha256: hash })
             .eq("user_id", userid);
+
+        if (error) return alert("Erro ao alterar password.");
 
         alert("Password alterada.");
         ADMIN.fecharModais();
@@ -123,11 +138,12 @@ const ADMIN = {
 
 
     /* ===========================================================
-       CATEGORIAS
+       LISTAR CATEGORIAS
     ============================================================ */
     async listCategorias() {
 
         const cont = document.getElementById("admin-modais");
+
         cont.innerHTML = `
             <div class="modal">
                 <div class="modal-content">
@@ -150,15 +166,17 @@ const ADMIN = {
             </div>
         `;
 
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from("categorias")
             .select("id, nome, user_id")
             .order("nome");
 
+        if (error) return alert("Erro ao carregar categorias.");
+
         const mapUsers = {
-            "1c98dd8f04fbfdbb0a48dce6bcf8247d924fb34a8b6f48b9c5557ffbcd7e45d1" : "Helder",
-            "2f9b1cc8b54a304b14f06716bf7f0ec2a3f8abf977dd8e650f5a1712da50e5a1" : "Goreti",
-            "a8ff446f10f0e0cf8f3ac8ea3245f033e7d5e9ff9c60139fbbd5bfe2ccea62b8" : "Conjunto"
+            "1c98dd8f04fbfdbb0a48dce6bcf8247d924fb34a8b6f48b9c5557ffbcd7e45d1": "Helder",
+            "2f9b1cc8b54a304b14f06716bf7f0ec2a3f8abf977dd8e650f5a1712da50e5a1": "Goreti",
+            "a8ff446f10f0e0cf8f3ac8ea3245f033e7d5e9ff9c60139fbbd5bfe2ccea62b8": "Conjunto"
         };
 
         document.getElementById("cat-lista").innerHTML = data.map(c => `
@@ -169,22 +187,27 @@ const ADMIN = {
     },
 
 
+    /* ===========================================================
+       CRIAR CATEGORIA
+    ============================================================ */
     async criarCategoria() {
         const nome = document.getElementById("new-cat-nome").value.trim();
         const userSel = document.getElementById("new-cat-user").value;
 
         const mapUserId = {
             "helder": "1c98dd8f04fbfdbb0a48dce6bcf8247d924fb34a8b6f48b9c5557ffbcd7e45d1",
-            "goreti":"2f9b1cc8b54a304b14f06716bf7f0ec2a3f8abf977dd8e650f5a1712da50e5a1",
-            "conjunto":"a8ff446f10f0e0cf8f3ac8ea3245f033e7d5e9ff9c60139fbbd5bfe2ccea62b8"
+            "goreti": "2f9b1cc8b54a304b14f06716bf7f0ec2a3f8abf977dd8e650f5a1712da50e5a1",
+            "conjunto": "a8ff446f10f0e0cf8f3ac8ea3245f033e7d5e9ff9c60139fbbd5bfe2ccea62b8"
         };
 
         if (!nome) return alert("Escreva o nome da categoria.");
 
-        await supabase.from("categorias").insert({
+        const { error } = await supabase.from("categorias").insert({
             nome,
             user_id: mapUserId[userSel]
         });
+
+        if (error) return alert("Erro ao criar categoria.");
 
         alert("Categoria criada.");
         ADMIN.listCategorias();
@@ -192,7 +215,7 @@ const ADMIN = {
 
 
     /* ===========================================================
-       ORÇAMENTOS MENSAIS
+       MOSTRAR ORÇAMENTOS
     ============================================================ */
     async showOrcamentos() {
 
@@ -210,11 +233,13 @@ const ADMIN = {
             </div>
         `;
 
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from("orcamentos")
             .select("*")
             .order("ano")
             .order("mes");
+
+        if (error) return alert("Erro ao carregar orçamentos.");
 
         const out = data.map(o => `
             <div class="admin-line">
@@ -227,7 +252,7 @@ const ADMIN = {
 
 
     /* ===========================================================
-       MODAIS
+       FECHAR MODAIS
     ============================================================ */
     fecharModais() {
         document.getElementById("admin-modais").innerHTML = "";
