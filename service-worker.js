@@ -1,47 +1,48 @@
 /* ===========================================================
-   SERVICE-WORKER.JS — V10 FINAL
-   PWA seguro para app com Supabase (sem cache de dados)
+   SERVICE-WORKER.JS — V12 FINAL (CORRIGIDO PARA GITHUB PAGES)
+   PWA seguro para app com Supabase (sem cache de dados dinâmicos)
 =========================================================== */
 
-const CACHE_NAME = "despesas-v10";
+const CACHE_NAME = "despesas-v12";
+
+/*  
+    ⚠ IMPORTANTE PARA GITHUB PAGES:
+    Tudo deve ser relativo (sem / no início).
+*/
 const FILES_TO_CACHE = [
-    "/", 
-    "/index.html",
-    "/ui.css",
-    "/app.js",
-    "/auth.js",
-    "/db.js",
-    "/dashboard.js",
-    "/debitos.js",
-    "/metas.js",
-    "/admin.js",
-    "/manifest.json"
+    "./",
+    "./index.html",
+    "./ui.css",
+    "./app.js",
+    "./auth.js",
+    "./db.js",
+    "./dashboard.js",
+    "./debitos.js",
+    "./metas.js",
+    "./admin.js",
+    "./manifest.json"
 ];
 
 /* ===========================================================
-   INSTALAÇÃO — Guarda apenas ficheiros estáticos
+   INSTALAÇÃO — Apenas ficheiros estáticos
 =========================================================== */
 self.addEventListener("install", event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => {
-            return cache.addAll(FILES_TO_CACHE);
-        })
+        caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
     );
     self.skipWaiting();
 });
 
 /* ===========================================================
-   ATIVAR — Limpa caches antigos
+   ATIVAR — Remover caches antigos
 =========================================================== */
 self.addEventListener("activate", event => {
     event.waitUntil(
         caches.keys().then(keys => {
             return Promise.all(
-                keys.map(key => {
-                    if (key !== CACHE_NAME) {
-                        return caches.delete(key);
-                    }
-                })
+                keys
+                    .filter(key => key !== CACHE_NAME)
+                    .map(oldKey => caches.delete(oldKey))
             );
         })
     );
@@ -49,17 +50,22 @@ self.addEventListener("activate", event => {
 });
 
 /* ===========================================================
-   FETCH — 
-   1) Tenta rede primeiro (para Supabase funcionar sempre)
-   2) Se falhar, usa cache estático local
+   FETCH
+   - Supabase → nunca cachear
+   - Ficheiros estáticos → cache fallback
 =========================================================== */
 self.addEventListener("fetch", event => {
 
     const url = new URL(event.request.url);
 
-    // nunca cachear chamadas ao Supabase (importante!)
+    // ⚠ Evitar cache de chamadas dinâmicas do Supabase
     if (url.hostname.includes("supabase.co")) {
         return; 
+    }
+
+    // ⚠ Evitar cache de resultados JSON / APIs (caso existam)
+    if (event.request.headers.get("accept")?.includes("application/json")) {
+        return fetch(event.request);
     }
 
     event.respondWith(
