@@ -1,56 +1,47 @@
 /* ===========================================================
-   AUTH.JS — V10 FINAL
-   Módulo auxiliar de autenticação
-   (O login real está em APP.appLogin)
+   AUTH.JS — V10 FINAL CORRIGIDO PARA GITHUB PAGES + SUPABASE
+   (Agora sem RPC, totalmente compatível com APP.JS V12)
 =========================================================== */
 
 const AUTH = {
 
     /* ===========================================================
-       DEVOLVER USER ATUAL
+       DEVOLVER INFO DO USER ATUAL
     ============================================================ */
     getUser() {
-        return APP.currentUser;
+        return {
+            username: APP.user,
+            id: APP.userId,
+            role: APP.role
+        };
     },
 
     /* ===========================================================
        VERIFICAR SE É ADMIN
     ============================================================ */
     isAdmin() {
-        return APP.currentUser && APP.currentUser.role === "admin";
+        return APP.role === "admin";
     },
 
     /* ===========================================================
        LOGOUT TOTAL
     ============================================================ */
     logout() {
-        localStorage.removeItem("sessao-user");
-        APP.currentUser = null;
+        localStorage.removeItem("sessao");   // sessão correta
+        APP.user = null;
+        APP.userId = null;
+        APP.role = null;
+
         APP.showPage("login");
-    },
-
-    /* ===========================================================
-       REATIVAR RLS AO INICIAR A APP
-       (sempre que se faz reload)
-    ============================================================ */
-    async reativarSessaoRLS() {
-
-        if (!APP.currentUser) return;
-
-        try {
-            await supabase.rpc("set_app_user", {
-                userid: APP.currentUser.id
-            });
-        } catch (e) {
-            console.error("Erro ao reativar sessão RLS:", e);
-        }
     }
+
 };
 
 
 /* ===========================================================
-   AO CARREGAR A APP — REATIVA RLS
+   AO CARREGAR A APP
+   (não há mais RLS via RPC)
 =========================================================== */
-window.addEventListener("load", async () => {
-    await AUTH.reativarSessaoRLS();
+window.addEventListener("load", () => {
+    // Nada aqui — o APP.handleSession já trata tudo
 });
