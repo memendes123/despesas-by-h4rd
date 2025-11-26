@@ -6,22 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- CSS -->
-    <link rel="stylesheet" href="ui.css">
+    <link rel="stylesheet" href="./ui.css">
 
     <!-- Manifest -->
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="./manifest.json">
 
-    <!-- Supabase v2 -->
+    <!-- ===========================================================
+         SUPABASE (CARREGADO ANTES DE TUDO)
+    ============================================================ -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
         const supabaseUrl = "https://wcdzwswjbhwkyfdqpner.supabase.co";
-		const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjZHp3c3dqYmh3a3lmZHFwbmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NDExNjEsImV4cCI6MjA3OTMxNzE2MX0.PX6lM9MTiu1TcffOiGKw2jVQkl8x1pZBRY8HcDHseMs";
 
-		const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        /* 🔥 ANON KEY REAL DO TEU PROJETO */
+        const supabaseKey =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzM0NzUyOTkxLCJleHAiOjIwNTAxMTg5OTF9.c-UWB6xKt1kf7KgnsDcN5ePXRy8GqSQdUcsFeWu0JqY";
 
+        /* 🔥 Criar cliente Supabase GLOBAL (antes do resto do JS) */
+        window.supabase = supabase.createClient(supabaseUrl, supabaseKey);
     </script>
-
 </head>
 
 <body>
@@ -43,14 +47,13 @@
     </div>
 </div>
 
-
 <!-- ===========================================================
      DASHBOARD
 =========================================================== -->
 <div class="page hidden" id="page-dashboard">
     <h2>Dashboard</h2>
 
-    <div id="mes-ano-select">
+    <div id="mes-ao-select">
         <select id="sel-mes" onchange="APP.mesAtual=this.value; DASHBOARD.load()">
             <script>
             for (let m=1; m<=12; m++) {
@@ -72,7 +75,6 @@
     <div id="dashboard-resumo"></div>
     <div id="dashboard-ultimos"></div>
 </div>
-
 
 <!-- ===========================================================
      DÉBITOS DIRETOS
@@ -103,7 +105,6 @@
     </div>
 </div>
 
-
 <!-- ===========================================================
      METAS
 =========================================================== -->
@@ -132,7 +133,6 @@
     </div>
 </div>
 
-
 <!-- ===========================================================
      CONTA / ADMIN
 =========================================================== -->
@@ -157,7 +157,6 @@
 <!-- MODAIS ADMIN -->
 <div id="admin-modais"></div>
 
-
 <!-- ===========================================================
      BOTTOM NAV
 =========================================================== -->
@@ -168,21 +167,21 @@
     <button data-tab="conta">Conta</button>
 </div>
 
-
 <!-- ===========================================================
-     SCRIPTS
+     JAVASCRIPT (AGORA CARREGADOS NO FIM CORRETAMENTE)
 =========================================================== -->
-<script src="app.js"></script>
-<script src="auth.js"></script>
-<script src="db.js"></script>
-<script src="dashboard.js"></script>
-<script src="debitos.js"></script>
-<script src="metas.js"></script>
-<script src="admin.js"></script>
+<script src="./app.js"></script>
+<script src="./auth.js"></script>
+<script src="./db.js"></script>
+<script src="./dashboard.js"></script>
+<script src="./debitos.js"></script>
+<script src="./metas.js"></script>
+<script src="./admin.js"></script>
 
+<!-- SERVICE WORKER (FUNCIONAL NO GitHub Pages) -->
 <script>
     if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("service-worker.js");
+        navigator.serviceWorker.register("./service-worker.js");
     }
 </script>
 
