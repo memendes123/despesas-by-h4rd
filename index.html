@@ -11,20 +11,16 @@
     <!-- Manifest -->
     <link rel="manifest" href="./manifest.json">
 
-    <!-- ===========================================================
-         SUPABASE — Inicialização Segura
-    ============================================================ -->
+    <!-- SUPABASE -->
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script defer>
         document.addEventListener("DOMContentLoaded", function () {
 
             const supabaseUrl = "https://wcdzwswjbhwkyfdqpner.supabase.co";
-
             const supabaseKey =
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjZHp3c3dqYmh3a3lmZHFwbmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NDExNjEsImV4cCI6MjA3OTMxNzE2MX0.PX6lM9MTiu1TcffOiGKw2jVQkl8x1pZBRY8HcDHseMs";
 
-            // Criar cliente global Supabase
             window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
         });
     </script>
@@ -33,7 +29,7 @@
 <body>
 
 <!-- ===========================================================
-     LOGIN
+     PAGE LOGIN
 =========================================================== -->
 <div class="page" id="page-login">
     <div id="login-box">
@@ -50,7 +46,7 @@
 </div>
 
 <!-- ===========================================================
-     DASHBOARD
+     PAGE DASHBOARD
 =========================================================== -->
 <div class="page hidden" id="page-dashboard">
     <h2>Dashboard</h2>
@@ -58,16 +54,14 @@
     <div id="mes-ao-select">
         <select id="sel-mes" onchange="APP.mesAtual=this.value; DASHBOARD.load()">
             <script>
-                for (let m=1; m<=12; m++)
-                    document.write(`<option value="${m}">${m}</option>`);
+                for (let m=1; m<=12; m++) document.write(`<option value="${m}">${m}</option>`);
             </script>
         </select>
 
         <select id="sel-ano" onchange="APP.anoAtual=this.value; DASHBOARD.load()">
             <script>
                 const ano = new Date().getFullYear();
-                for (let a = ano - 5; a <= ano + 3; a++)
-                    document.write(`<option value="${a}">${a}</option>`);
+                for (let a=ano-5; a<=ano+3; a++) document.write(`<option value="${a}">${a}</option>`);
             </script>
         </select>
     </div>
@@ -77,61 +71,176 @@
 </div>
 
 <!-- ===========================================================
-     OUTRAS PÁGINAS (DÉBITOS, METAS, ADMIN...)
+     PAGE MOVIMENTOS
 =========================================================== -->
+<div class="page hidden" id="page-movimentos">
+    <h2>Movimentos</h2>
 
+    <button class="btn-success" onclick="MOVIMENTOS.abrirAdicionar()">+ Adicionar</button>
+
+    <div id="mov-lista"></div>
+</div>
+
+<!-- MODAL ADICIONAR MOVIMENTO -->
+<div class="modal hidden" id="modal-mov">
+    <div class="modal-content">
+        <h3>Novo Movimento</h3>
+
+        <input id="mov-data" type="date">
+        <input id="mov-desc" placeholder="Descrição">
+        <input id="mov-valor" type="number" step="0.01" placeholder="Valor">
+
+        <select id="mov-tipo">
+            <option value="entrada">Entrada</option>
+            <option value="despesa">Despesa</option>
+        </select>
+
+        <select id="mov-cat"></select>
+
+        <button class="btn-success" onclick="MOVIMENTOS.adicionar()">Guardar</button>
+        <button class="btn-danger" onclick="MOVIMENTOS.fechar()">Cancelar</button>
+    </div>
+</div>
+
+<!-- ===========================================================
+     PAGE CATEGORIAS
+=========================================================== -->
+<div class="page hidden" id="page-categorias">
+    <h2>Categorias</h2>
+
+    <button class="btn-success" onclick="ADMIN.listCategorias()">Gerir Categorias</button>
+
+    <div id="cat-lista"></div>
+</div>
+
+<!-- ===========================================================
+     PAGE DÉBITOS
+=========================================================== -->
 <div class="page hidden" id="page-debitos">
     <h2>Débitos Diretos</h2>
+
+    <button class="btn-success" onclick="DEBITOS.abrirAdicionar()">+ Adicionar</button>
+
     <div id="debitos-lista"></div>
-    <button onclick="DEBITOS.abrirAdicionar()">Adicionar Débito</button>
 </div>
 
+<!-- MODAL ADICIONAR DÉBITO -->
+<div class="modal hidden" id="modal-debito">
+    <div class="modal-content">
+        <h3>Novo Débito</h3>
+
+        <input id="deb-nome" placeholder="Nome">
+        <input id="deb-valor" type="number" placeholder="Valor">
+        <input id="deb-dia" type="number" min="1" max="31" placeholder="Dia do débito">
+        <input id="deb-inicio" type="date">
+        <input id="deb-fim" type="date">
+
+        <button class="btn-success" onclick="DEBITOS.adicionarDebito()">Guardar</button>
+        <button class="btn-danger" onclick="DEBITOS.fecharAdicionar()">Cancelar</button>
+    </div>
+</div>
+
+<!-- ===========================================================
+     PAGE METAS
+=========================================================== -->
 <div class="page hidden" id="page-metas">
     <h2>Metas</h2>
+
+    <button class="btn-success" onclick="METAS.abrirAdicionar()">+ Nova Meta</button>
+
     <div id="metas-lista"></div>
-    <button onclick="METAS.abrirAdicionar()">Adicionar Meta</button>
 </div>
 
+<!-- MODAL META -->
+<div class="modal hidden" id="modal-meta">
+    <div class="modal-content">
+        <h3>Nova Meta</h3>
+
+        <input id="meta-nome" placeholder="Nome da meta">
+        <input id="meta-objetivo" type="number" placeholder="Objetivo €">
+        <input id="meta-inicio" type="date">
+        <input id="meta-fim" type="date">
+
+        <button class="btn-success" onclick="METAS.adicionar()">Guardar</button>
+        <button class="btn-danger" onclick="METAS.fecharAdicionar()">Cancelar</button>
+    </div>
+</div>
+
+<!-- ===========================================================
+     PAGE CONTA / SETTINGS
+=========================================================== -->
 <div class="page hidden" id="page-conta">
     <h2>Conta</h2>
-    <div class="admin-card">
-        <p><b>User:</b> <span id="conta-user"></span></p>
+
+    <div id="conta-info">
+        <p><b>Utilizador:</b> <span id="conta-user"></span></p>
+        <p><b>ID:</b> <span id="conta-id"></span></p>
         <p><b>Role:</b> <span id="conta-role"></span></p>
-        <button class="btn-danger" onclick="APP.appLogout()">Logout</button>
     </div>
 
-    <div id="admin-panel" class="hidden">
-        <h3>Painel de Administração</h3>
-        <button onclick="ADMIN.showUsers()">Gerir Utilizadores</button>
-        <button onclick="ADMIN.listCategorias()">Gerir Categorias</button>
-        <button onclick="ADMIN.showOrcamentos()">Ver Orçamentos</button>
-    </div>
+    <h3>Alterar Password</h3>
+    <input id="new-pass1" type="password" placeholder="Nova password">
+    <input id="new-pass2" type="password" placeholder="Confirmar password">
+
+    <button class="btn-success" onclick="APP.mudarPassword()">Alterar Password</button>
+
+    <hr style="margin:20px 0">
+
+    <button class="btn-danger" onclick="APP.appLogout()">Terminar Sessão</button>
 </div>
 
-<div id="admin-modais"></div>
+<!-- ===========================================================
+     PAGE ADMIN (só aparece se admin)
+=========================================================== -->
+<div class="page hidden" id="page-admin">
+    <h2>Painel Admin</h2>
 
-<!-- Bottom Nav -->
+    <button onclick="ADMIN.showUsers()">Gerir Utilizadores</button>
+    <button onclick="ADMIN.listCategorias()">Gerir Categorias</button>
+    <button onclick="ADMIN.showOrcamentos()">Ver Orçamentos</button>
+
+    <div id="admin-modais"></div>
+</div>
+
+<!-- ===========================================================
+     BOTTOM NAV — 6 TABS
+=========================================================== -->
 <div class="bottom-nav">
     <button data-tab="dashboard">Dashboard</button>
+    <button data-tab="movimentos">Movimentos</button>
+    <button data-tab="categorias">Categorias</button>
     <button data-tab="debitos">Débitos</button>
     <button data-tab="metas">Metas</button>
     <button data-tab="conta">Conta</button>
 </div>
 
+<!-- ADMIN (mostrado por JS caso role=admin) -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const nav = document.querySelector(".bottom-nav");
+    const btn = document.createElement("button");
+    btn.textContent = "Admin";
+    btn.dataset.tab = "admin";
+
+    // só aparece se for admin
+    setTimeout(()=>{
+        if (APP?.role === "admin") nav.appendChild(btn);
+    }, 500);
+});
+</script>
+
 <!-- ===========================================================
-     SCRIPTS (todos com defer)
+     JS FILES
 =========================================================== -->
 <script defer src="./app.js"></script>
 <script defer src="./auth.js"></script>
 <script defer src="./db.js"></script>
-<script defer src="./dashboard.js"></script> <!-- CORRIGIDO -->
+<script defer src="./dashboard.js"></script>
 <script defer src="./debitos.js"></script>
 <script defer src="./metas.js"></script>
 <script defer src="./admin.js"></script>
 
-<!-- ===========================================================
-     SERVICE WORKER (GitHub Pages Ready)
-=========================================================== -->
+<!-- SERVICE WORKER -->
 <script defer>
     if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("./service-worker.js");
