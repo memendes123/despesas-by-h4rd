@@ -1,141 +1,125 @@
 /* ===========================================================
-   APP.JS — VERSÃO FINAL (100% FUNCIONAL)
+   APP.JS — V10 FINAL
+   Gestão de sessão, login, navegação e inicialização
 =========================================================== */
 
 const APP = {
-
     currentUser: null,
     mesAtual: new Date().getMonth() + 1,
     anoAtual: new Date().getFullYear(),
 
     /* ===========================================================
-       INICIAR APP
+       MOSTRAR PÁGINA
     ============================================================ */
-    init: async function () {
-
-        // Carregar sessão guardada
-        let sessao = localStorage.getItem("sessao-user");
-        if (sessao) {
-            APP.currentUser = JSON.parse(sessao);
-
-            // Reativar RLS
-            await supabase.rpc("set_app_user", { userid: APP.currentUser.id });
-
-            APP.showPage("dashboard");
-        } else {
-            APP.showPage("login");
-        }
-
-        // Navegação
-        document.querySelectorAll(".bottom-nav button").forEach(btn => {
-            btn.onclick = () => APP.showPage(btn.dataset.tab);
-        });
+    showPage(page) {
+        document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
+        document.getElementById(`page-${page}`).classList.remove("hidden");
     },
 
     /* ===========================================================
-       LOGIN
+       LOGIN — V10 (FUNCIONAL COM SUPABASE + RLS)
     ============================================================ */
-    appLogin: async function (username, password) {
+    async appLogin(username, password) {
 
         if (!username || !password) {
-            return alert("Preencha username e password");
+            alert("Preencha username e password.");
+            return;
         }
 
-        // 1) Buscar user
-        let { data: users, error } = await supabase
-            .from("users")
-            .select("*")
-            .eq("username", username)
-            .limit(1);
-
-        if (error) {
-            console.error(error);
-            return alert("Erro a procurar utilizador.");
-        }
-
-        if (!users || users.length === 0) {
-            return alert("Utilizador não encontrado.");
-        }
-
-        let user = users[0];
-
-        // 2) Buscar hash da password
-        let { data: passdata } = await supabase
-            .from("user_passwords")
-            .select("password_sha256")
-            .eq("user_id", user.id)
-            .limit(1);
-
-        if (!passdata || passdata.length === 0) {
-            return alert("Password não configurada.");
-        }
-
-        let storedHash = passdata[0].password_sha256;
-
-        // 3) Calcular hash SHA-256 da password introduzida
-        let encoder = new TextEncoder();
-        let buffer = await crypto.subtle.digest("SHA-256", encoder.encode(password));
-        let hashHex = [...new Uint8Array(buffer)]
+        /* Hash da password */
+        const hash = await crypto.subtle.digest(
+            "SHA-256",
+            new TextEncoder().encode(password)
+        );
+        const hex = Array.from(new Uint8Array(hash))
             .map(b => b.toString(16).padStart(2, "0"))
             .join("");
 
-        if (hashHex !== storedHash) {
-            return alert("Password incorreta.");
+        /* 1) Buscar user pelo username */
+        const { data: user, error: errUser } = await supabase
+            .from("users")
+            .select("*")
+            .eq("username", username)
+            .maybeSingle();
+
+        if (!user) {
+            alert("Utilizador não encontrado.");
+            return;
         }
 
-        // 4) Guardar sessão
+        /* 2) Buscar password sha256 */
+        const { data: passRow } = await supabase
+            .from("user_passwords")
+            .select("*")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+        if (!passRow || passRow.password_sha256 !== hex) {
+            alert("Password incorreta.");
+            return;
+        }
+
+        /* 3) ATIVAR RLS NA SESSÃO */
+        await supabase.rpc("set_app_user", {
+            userid: user.id
+        });
+
+        /* Guardar sessão local */
         APP.currentUser = user;
         localStorage.setItem("sessao-user", JSON.stringify(user));
 
-        // 5) Ativar RLS
-        await supabase.rpc("set_app_user", { userid: user.id });
-
-        // 6) Abrir dashboard
+        /* UI */
         APP.showPage("dashboard");
+        DASHBOARD.load();
     },
 
     /* ===========================================================
        LOGOUT
     ============================================================ */
-    appLogout: function () {
+    appLogout() {
         localStorage.removeItem("sessao-user");
         APP.currentUser = null;
         APP.showPage("login");
     },
 
     /* ===========================================================
-       MOSTRAR PÁGINAS
+       REATIVAR SESSÃO AO ENTRAR NO SITE
     ============================================================ */
-    showPage: function (page) {
-        document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
-        document.getElementById("page-" + page).classList.remove("hidden");
+    async iniciar() {
 
-        if (page === "dashboard") DASHBOARD.load();
-        if (page === "debitos") DEBITOS.load();
-        if (page === "metas") METAS.load();
-        if (page === "conta") APP.loadConta();
-    },
+        const sessao = localStorage.getItem("sessao-user");
 
-    /* ===========================================================
-       CARREGAR PÁGINA CONTA
-    ============================================================ */
-    loadConta: function () {
+        if (sessao) {
+            APP.currentUser = JSON.parse(sessao);
 
-        if (!APP.currentUser) return;
+            /* Reativar RLS */
+            await supabase.rpc("set_app_user", {
+                userid: APP.currentUser.id
+            });
 
-        document.getElementById("conta-user").textContent = APP.currentUser.username;
-        document.getElementById("conta-role").textContent = APP.currentUser.role;
+            APP.showPage("dashboard");
+            DASHBOARD.load();
+        } else {
+            APP.showPage("login");
+        }
 
-        // Mostrar painel admin
-        if (APP.currentUser.role === "admin")
-            document.getElementById("admin-panel").classList.remove("hidden");
-        else
-            document.getElementById("admin-panel").classList.add("hidden");
+        // bottom nav
+        document.querySelectorAll(".bottom-nav button").forEach(btn => {
+            btn.onclick = () => {
+                const tab = btn.dataset.tab;
+                APP.showPage(tab);
+
+                if (tab === "dashboard") DASHBOARD.load();
+                if (tab === "debitos") DEBITOS.load();
+                if (tab === "metas") METAS.load();
+            };
+        });
     }
 };
 
-
 /* ===========================================================
-   INICIAR A APLICAÇÃO
+   INICIAR APP
 =========================================================== */
-document.addEventListener("DOMContentLoaded", APP.init);
+window.addEventListener("load", () => {
+    APP.iniciar();
+});
