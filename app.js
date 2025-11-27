@@ -72,6 +72,7 @@ const APP = {
         APP.role = user.role;
 
         APP.ensureAdminTab();
+        APP.renderContaInfo();
 
         localStorage.setItem("sessao", JSON.stringify({
             user: APP.user,
@@ -101,6 +102,7 @@ const APP = {
             APP.role = session.role;
 
             APP.ensureAdminTab();
+            APP.renderContaInfo();
 
             APP.showPage("dashboard");
             await DASHBOARD.load();
@@ -122,6 +124,7 @@ const APP = {
         APP.role = null;
 
         APP.ensureAdminTab();
+        APP.renderContaInfo();
 
         APP.showPage("login");
     },
@@ -167,6 +170,22 @@ const APP = {
         return [...new Uint8Array(hashBuffer)]
             .map(b => b.toString(16).padStart(2, "0"))
             .join("");
+    },
+
+
+    /* ===========================================================
+       RENDER INFO DA CONTA
+    ============================================================ */
+    renderContaInfo() {
+        const userEl = document.getElementById("conta-user");
+        const idEl = document.getElementById("conta-id");
+        const roleEl = document.getElementById("conta-role");
+
+        if (!userEl || !idEl || !roleEl) return;
+
+        userEl.textContent = APP.user ?? "-";
+        idEl.textContent = APP.userId ?? "-";
+        roleEl.textContent = APP.role ?? "-";
     },
 
 
