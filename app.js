@@ -1,5 +1,5 @@
 /* ===========================================================
-   APP.JS — V12 FINAL CORRIGIDO PARA GITHUB PAGES + SUPABASE
+   APP.JS — V13 FINAL CORRIGIDO PARA GITHUB PAGES + SUPABASE
 =========================================================== */
 
 const APP = {
@@ -15,7 +15,6 @@ const APP = {
     supabaseClient: null,
     supabaseReady: null,
 
-
     /* ===========================================================
        GARANTIR QUE O CLIENTE SUPABASE EXISTE
     ============================================================ */
@@ -23,19 +22,17 @@ const APP = {
         if (this.supabaseClient) return this.supabaseClient;
 
         if (!window.supabase || typeof window.supabase.createClient !== "function") {
-            alert("Supabase não está disponível. Verifique a ligação ou recarregue a página.");
+            alert("Supabase não está disponível. Recarregue a página.");
             return null;
         }
 
         this.supabaseClient = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
-        // manter compatibilidade com os restantes módulos
-        window.supabase = this.supabaseClient;
         return this.supabaseClient;
     },
 
 
     /* ===========================================================
-       AGUARDAR PELA SDK SUPABASE
+       AGUARDAR SUPABASE SDK
     ============================================================ */
     async waitForSupabase(timeoutMs = 5000) {
         if (this.supabaseClient) return true;
@@ -70,14 +67,12 @@ const APP = {
 
         const ready = await APP.waitForSupabase();
         if (!ready) {
-            alert("Supabase não carregou. Verifique a ligação à internet e recarregue a página.");
+            alert("Supabase não carregou.");
             return;
         }
 
         const client = APP.ensureClient();
         if (!client) return;
-
-        if (!APP.ensureClient()) return;
 
         if (!username || !password) {
             alert("Preencha username e password.");
@@ -91,53 +86,40 @@ const APP = {
             .map(b => b.toString(16).padStart(2, "0"))
             .join("");
 
-        // 1) Buscar user
+        // 1) Buscar utilizador
         const { data: users, error: e1 } = await client
             .from("users")
             .select("*")
             .eq("username", username.toLowerCase())
             .limit(1);
 
-        if (e1) {
-            console.error(e1);
-            return alert("Erro ao ligar ao servidor.");
-        }
-
-        if (!users?.length) {
-            return alert("Utilizador não encontrado.");
-        }
+        if (e1) return alert("Erro ao comunicar com servidor.");
+        if (!users?.length) return alert("Utilizador não encontrado.");
 
         const user = users[0];
 
-        // 2) Buscar hash da password
+        // 2) Buscar password hash
         const { data: pass, error: e2 } = await client
             .from("user_passwords")
             .select("password_sha256")
             .eq("user_id", user.id)
             .limit(1);
 
-        if (e2) {
-            console.error(e2);
-            return alert("Erro ao verificar password.");
-        }
-
-        if (!pass?.length) {
-            return alert("Password não encontrada.");
-        }
+        if (e2) return alert("Erro ao validar password.");
+        if (!pass?.length) return alert("Password não encontrada.");
 
         if (hashHex !== pass[0].password_sha256) {
             return alert("Password incorreta.");
         }
 
-        // 3) Definir RLS para a sessão
+        // 3) Aplicar RLS
         const { error: rlsError } = await DB.setSessionUser(user.id);
-
         if (rlsError) {
-            alert("Erro a preparar sessão segura.");
-            return;
+            console.error(rlsError);
+            return alert("Erro ao ativar sessão segura.");
         }
 
-        // 4) Guardar sessão localmente
+        // 4) Guardar sessão
         APP.user = user.username;
         APP.userId = user.id;
         APP.role = user.role;
@@ -151,7 +133,7 @@ const APP = {
             role: APP.role
         }));
 
-        // 5) Carregar dashboard **APÓS DEFINIR userId**
+        // 5) Abrir dashboard
         APP.showPage("dashboard");
         await DASHBOARD.load();
     },
@@ -172,16 +154,7 @@ const APP = {
             APP.userId = session.id;
             APP.role = session.role;
 
-            const ready = await APP.waitForSupabase();
-            if (!ready) {
-                console.warn("Supabase não carregou — sessão não restaurada.");
-                return;
-            }
-
-            const { error } = await DB.setSessionUser(APP.userId);
-            if (error) {
-                console.warn("Não foi possível reativar RLS da sessão.");
-            }
+            await DB.setSessionUser(APP.userId);
 
             APP.ensureAdminTab();
             APP.renderContaInfo();
@@ -200,7 +173,6 @@ const APP = {
     ============================================================ */
     appLogout() {
         localStorage.removeItem("sessao");
-
         APP.user = null;
         APP.userId = null;
         APP.role = null;
@@ -222,77 +194,39 @@ const APP = {
 
 
     /* ===========================================================
-       GERIR TAB DE ADMIN
+       ADMIN TAB
     ============================================================ */
     ensureAdminTab() {
         const nav = document.querySelector(".bottom-nav");
         if (!nav) return;
 
-        const existing = nav.querySelector("button[data-tab='admin']");
+        const exists = nav.querySelector("button[data-tab='admin']");
 
         if (APP.role === "admin") {
-            if (!existing) {
+            if (!exists) {
                 const btn = document.createElement("button");
                 btn.textContent = "Admin";
                 btn.dataset.tab = "admin";
                 nav.appendChild(btn);
             }
-        } else if (existing) {
-            existing.remove();
+        } else if (exists) {
+            exists.remove();
         }
     },
 
 
     /* ===========================================================
-       HASH UTIL
-    ============================================================ */
-    async hash(text) {
-        const enc = new TextEncoder();
-        const hashBuffer = await crypto.subtle.digest("SHA-256", enc.encode(text));
-        return [...new Uint8Array(hashBuffer)]
-            .map(b => b.toString(16).padStart(2, "0"))
-            .join("");
-    },
-
-
-    /* ===========================================================
-       RENDER INFO DA CONTA
-    ============================================================ */
-    renderContaInfo() {
-        const userEl = document.getElementById("conta-user");
-        const idEl = document.getElementById("conta-id");
-        const roleEl = document.getElementById("conta-role");
-
-        if (!userEl || !idEl || !roleEl) return;
-
-        userEl.textContent = APP.user ?? "-";
-        idEl.textContent = APP.userId ?? "-";
-        roleEl.textContent = APP.role ?? "-";
-    },
-
-
-    /* ===========================================================
-       ALTERAR PASSWORD DO UTILIZADOR ATUAL
+       ALTERAR PASSWORD
     ============================================================ */
     async mudarPassword() {
 
-        if (!APP.userId) {
-            alert("Sessão expirada. Faça login novamente.");
-            return;
-        }
+        if (!APP.userId) return alert("Sessão expirada.");
 
         const p1 = document.getElementById("new-pass1").value.trim();
         const p2 = document.getElementById("new-pass2").value.trim();
 
-        if (!p1 || !p2) {
-            alert("Preencha ambos os campos.");
-            return;
-        }
-
-        if (p1 !== p2) {
-            alert("As passwords não coincidem.");
-            return;
-        }
+        if (!p1 || !p2) return alert("Preencha ambos os campos.");
+        if (p1 !== p2) return alert("As passwords não coincidem.");
 
         const hash = await APP.hash(p1);
 
@@ -304,44 +238,63 @@ const APP = {
             .update({ password_sha256: hash })
             .eq("user_id", APP.userId);
 
-        if (error) {
-            console.error(error);
-            alert("Erro ao alterar password.");
-            return;
-        }
+        if (error) return alert("Erro ao alterar password.");
 
-        alert("Password alterada.");
-        document.getElementById("new-pass1").value = "";
-        document.getElementById("new-pass2").value = "";
+        alert("Password alterada!");
+    },
+
+
+    /* ===========================================================
+       HASH
+    ============================================================ */
+    async hash(text) {
+        const enc = new TextEncoder();
+        const hashBuffer = await crypto.subtle.digest("SHA-256", enc.encode(text));
+        return [...new Uint8Array(hashBuffer)]
+            .map(b => b.toString(16).padStart(2, "0"))
+            .join("");
+    },
+
+
+    /* ===========================================================
+       INFO DA CONTA
+    ============================================================ */
+    renderContaInfo() {
+        const u = document.getElementById("conta-user");
+        const i = document.getElementById("conta-id");
+        const r = document.getElementById("conta-role");
+
+        if (!u) return;
+
+        u.textContent = APP.user ?? "-";
+        i.textContent = APP.userId ?? "-";
+        r.textContent = APP.role ?? "-";
     }
-
 };
 
 
 /* ===========================================================
-   Inicialização
+   INICIALIZAÇÃO
 =========================================================== */
 window.addEventListener("load", () => {
 
     (async () => {
-        const ready = await APP.waitForSupabase();
-        if (!ready) {
-            alert("Supabase não carregou. Confirme a ligação à internet e volte a abrir a app.");
+
+        if (!await APP.waitForSupabase()) {
+            alert("Supabase não carregou.");
             return;
         }
 
         const client = APP.ensureClient();
         if (!client) return;
 
-    const nav = document.querySelector(".bottom-nav");
+        const nav = document.querySelector(".bottom-nav");
 
         nav.addEventListener("click", async (evt) => {
             const btn = evt.target.closest("button");
-            if (!btn || !nav.contains(btn)) return;
+            if (!btn) return;
 
             const tab = btn.dataset.tab;
-            if (!tab) return;
-
             APP.showPage(tab);
 
             if (tab === "dashboard") await DASHBOARD.load();
@@ -352,6 +305,6 @@ window.addEventListener("load", () => {
         });
 
         APP.restoreSession();
+
     })();
 });
-
