@@ -32,6 +32,28 @@ const APP = {
         return this.supabaseClient;
     },
 
+    supabaseUrl: "https://wcdzwswjbhwkyfdqpner.supabase.co",
+    supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjZHp3c3dqYmh3a3lmZHFwbmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NDExNjEsImV4cCI6MjA3OTMxNzE2MX0.PX6lM9MTiu1TcffOiGKw2jVQkl8x1pZBRY8HcDHseMs",
+    supabaseClient: null,
+
+
+    /* ===========================================================
+       GARANTIR QUE O CLIENTE SUPABASE EXISTE
+    ============================================================ */
+    ensureClient() {
+        if (this.supabaseClient) return this.supabaseClient;
+
+        if (!window.supabase || typeof window.supabase.createClient !== "function") {
+            alert("Supabase não está disponível. Verifique a ligação ou recarregue a página.");
+            return null;
+        }
+
+        this.supabaseClient = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
+        // manter compatibilidade com os restantes módulos
+        window.supabase = this.supabaseClient;
+        return this.supabaseClient;
+    },
+
 
     /* ===========================================================
        GARANTIR QUE O CLIENTE SUPABASE EXISTE
@@ -49,6 +71,9 @@ const APP = {
        LOGIN
     ============================================================ */
     async appLogin(username, password) {
+
+        const client = APP.ensureClient();
+        if (!client) return;
 
         const client = APP.ensureClient();
         if (!client) return;
