@@ -214,24 +214,8 @@
     <button data-tab="conta">Conta</button>
 </div>
 
-<!-- ADMIN (mostrado por JS caso role=admin) -->
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    const nav = document.querySelector(".bottom-nav");
-    const btn = document.createElement("button");
-    btn.textContent = "Admin";
-    btn.dataset.tab = "admin";
-
-    // só aparece se for admin
-    setTimeout(()=>{
-        if (APP?.role === "admin") nav.appendChild(btn);
-    }, 500);
-});
-</script>
-
 <!-- ===========================================================
      JS FILES
-=========================================================== -->
 <script defer src="./app.js"></script>
 <script defer src="./auth.js"></script>
 <script defer src="./db.js"></script>
