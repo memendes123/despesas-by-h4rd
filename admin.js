@@ -5,10 +5,40 @@
 
 const ADMIN = {
 
+    usersCache: null,
+
+    ensureAdminAccess() {
+        if (APP.role !== "admin") {
+            alert("Apenas administradores podem usar esta área.");
+            return false;
+        }
+        return true;
+    },
+
+    async loadUsers() {
+        if (this.usersCache) return this.usersCache;
+
+        const { data, error } = await supabase
+            .from("users")
+            .select("id, username, role")
+            .order("username");
+
+        if (error) {
+            console.error("Erro a carregar utilizadores:", error);
+            alert("Não foi possível carregar a lista de utilizadores.");
+            return [];
+        }
+
+        this.usersCache = data || [];
+        return this.usersCache;
+    },
+
     /* ===========================================================
        LISTA DE UTILIZADORES
     ============================================================ */
     async showUsers() {
+
+        if (!this.ensureAdminAccess()) return;
 
         const cont = document.getElementById("admin-modais");
         cont.innerHTML = `
@@ -85,6 +115,7 @@ const ADMIN = {
         if (e2) return alert("Erro ao gravar password.");
 
         alert("Utilizador criado.");
+        this.usersCache = null;
         ADMIN.showUsers();
     },
 
@@ -142,6 +173,8 @@ const ADMIN = {
     ============================================================ */
     async listCategorias() {
 
+        if (!this.ensureAdminAccess()) return;
+
         const cont = document.getElementById("admin-modais");
 
         cont.innerHTML = `
@@ -154,11 +187,7 @@ const ADMIN = {
                     <h4>Nova Categoria</h4>
                     <input id="new-cat-nome" placeholder="Nome">
 
-                    <select id="new-cat-user">
-                        <option value="helder">Helder</option>
-                        <option value="goreti">Goreti</option>
-                        <option value="conjunto">Conjunto</option>
-                    </select>
+                    <select id="new-cat-user"></select>
 
                     <button class="btn-success" onclick="ADMIN.criarCategoria()">Criar</button>
                     <button class="btn-danger" onclick="ADMIN.fecharModais()">Fechar</button>
@@ -166,22 +195,37 @@ const ADMIN = {
             </div>
         `;
 
-        const { data, error } = await supabase
-            .from("categorias")
-            .select("id, nome, user_id")
-            .order("nome");
+        const [users, categorias] = await Promise.all([
+            this.loadUsers(),
+            supabase
+                .from("categorias")
+                .select("id, nome, user_id")
+                .order("nome")
+        ]);
 
-        if (error) return alert("Erro ao carregar categorias.");
+        if (categorias.error) {
+            console.error("Erro ao carregar categorias:", categorias.error);
+            document.getElementById("cat-lista").innerHTML = "Erro ao carregar categorias.";
+            return;
+        }
 
-        const mapUsers = {
-            "1c98dd8f04fbfdbb0a48dce6bcf8247d924fb34a8b6f48b9c5557ffbcd7e45d1": "Helder",
-            "2f9b1cc8b54a304b14f06716bf7f0ec2a3f8abf977dd8e650f5a1712da50e5a1": "Goreti",
-            "a8ff446f10f0e0cf8f3ac8ea3245f033e7d5e9ff9c60139fbbd5bfe2ccea62b8": "Conjunto"
-        };
+        const selectUsers = document.getElementById("new-cat-user");
+        selectUsers.innerHTML = users
+            .map(u => `<option value="${u.id}">${u.username} (${u.role})</option>`)
+            .join("");
 
-        document.getElementById("cat-lista").innerHTML = data.map(c => `
+        const catLista = document.getElementById("cat-lista");
+
+        if (!categorias?.data?.length) {
+            catLista.innerHTML = "Nenhuma categoria registada.";
+            return;
+        }
+
+        const mapUsers = Object.fromEntries(users.map(u => [u.id, u.username]));
+
+        catLista.innerHTML = categorias.data.map(c => `
             <div class="admin-line">
-                ${c.nome} — <i>${mapUsers[c.user_id] ?? "???"}</i>
+                ${c.nome} — <i>${mapUsers[c.user_id] ?? "(sem utilizador)"}</i>
             </div>
         `).join("");
     },
@@ -191,20 +235,17 @@ const ADMIN = {
        CRIAR CATEGORIA
     ============================================================ */
     async criarCategoria() {
+        if (!this.ensureAdminAccess()) return;
+
         const nome = document.getElementById("new-cat-nome").value.trim();
         const userSel = document.getElementById("new-cat-user").value;
 
-        const mapUserId = {
-            "helder": "1c98dd8f04fbfdbb0a48dce6bcf8247d924fb34a8b6f48b9c5557ffbcd7e45d1",
-            "goreti": "2f9b1cc8b54a304b14f06716bf7f0ec2a3f8abf977dd8e650f5a1712da50e5a1",
-            "conjunto": "a8ff446f10f0e0cf8f3ac8ea3245f033e7d5e9ff9c60139fbbd5bfe2ccea62b8"
-        };
-
         if (!nome) return alert("Escreva o nome da categoria.");
+        if (!userSel) return alert("Selecione um utilizador.");
 
         const { error } = await supabase.from("categorias").insert({
             nome,
-            user_id: mapUserId[userSel]
+            user_id: userSel
         });
 
         if (error) return alert("Erro ao criar categoria.");
@@ -218,6 +259,8 @@ const ADMIN = {
        MOSTRAR ORÇAMENTOS
     ============================================================ */
     async showOrcamentos() {
+
+        if (!this.ensureAdminAccess()) return;
 
         const cont = document.getElementById("admin-modais");
 
