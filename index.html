@@ -108,9 +108,19 @@
 <div class="page hidden" id="page-categorias">
     <h2>Categorias</h2>
 
-    <button class="btn-success" onclick="ADMIN.listCategorias()">Gerir Categorias</button>
+    <div class="card">
+        <h3>As minhas categorias</h3>
+        <div id="cat-lista"></div>
+        <div class="cat-form">
+            <input id="cat-nome" placeholder="Nome da nova categoria">
+            <button class="btn-success" onclick="CATEGORIAS.criar()">Criar</button>
+            <button onclick="CATEGORIAS.load()">Recarregar</button>
+        </div>
+    </div>
 
-    <div id="cat-lista"></div>
+    <hr style="margin:20px 0">
+
+    <button class="btn-success" onclick="ADMIN.listCategorias()">Gerir Categorias (Admin)</button>
 </div>
 
 <!-- ===========================================================

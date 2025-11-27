@@ -252,6 +252,9 @@ const ADMIN = {
 
         alert("Categoria criada.");
         ADMIN.listCategorias();
+        if (typeof CATEGORIAS !== "undefined") {
+            CATEGORIAS.load();
+        }
     },
 
 

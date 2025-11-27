@@ -251,6 +251,7 @@ window.addEventListener("load", () => {
 
         if (tab === "dashboard") await DASHBOARD.load();
         if (tab === "movimentos") await MOVIMENTOS.load();
+        if (tab === "categorias") await CATEGORIAS.load();
         if (tab === "debitos") await DEBITOS.load();
         if (tab === "metas") await METAS.load();
     });
