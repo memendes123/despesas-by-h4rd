@@ -12,9 +12,23 @@ const APP = {
 
 
     /* ===========================================================
+       GARANTIR QUE O CLIENTE SUPABASE EXISTE
+    ============================================================ */
+    ensureClient() {
+        if (!window.supabase) {
+            alert("Ligação ao servidor indisponível. Recarregue a página.");
+            return false;
+        }
+        return true;
+    },
+
+
+    /* ===========================================================
        LOGIN
     ============================================================ */
     async appLogin(username, password) {
+
+        if (!APP.ensureClient()) return;
 
         if (!username || !password) {
             alert("Preencha username e password.");
