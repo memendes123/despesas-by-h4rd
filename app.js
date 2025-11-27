@@ -77,6 +77,17 @@ const APP = {
         const client = APP.ensureClient();
         if (!client) return;
 
+        const client = APP.ensureClient();
+        if (!client) return;
+
+        const client = APP.ensureClient();
+        if (!client) return;
+
+        const client = APP.ensureClient();
+        if (!client) return;
+
+        if (!APP.ensureClient()) return;
+
         if (!username || !password) {
             alert("Preencha username e password.");
             return;
