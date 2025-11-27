@@ -127,6 +127,60 @@ const APP = {
     showPage(pg) {
         document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
         document.getElementById(`page-${pg}`).classList.remove("hidden");
+    },
+
+
+    /* ===========================================================
+       HASH UTIL
+    ============================================================ */
+    async hash(text) {
+        const enc = new TextEncoder();
+        const hashBuffer = await crypto.subtle.digest("SHA-256", enc.encode(text));
+        return [...new Uint8Array(hashBuffer)]
+            .map(b => b.toString(16).padStart(2, "0"))
+            .join("");
+    },
+
+
+    /* ===========================================================
+       ALTERAR PASSWORD DO UTILIZADOR ATUAL
+    ============================================================ */
+    async mudarPassword() {
+
+        if (!APP.userId) {
+            alert("Sessão expirada. Faça login novamente.");
+            return;
+        }
+
+        const p1 = document.getElementById("new-pass1").value.trim();
+        const p2 = document.getElementById("new-pass2").value.trim();
+
+        if (!p1 || !p2) {
+            alert("Preencha ambos os campos.");
+            return;
+        }
+
+        if (p1 !== p2) {
+            alert("As passwords não coincidem.");
+            return;
+        }
+
+        const hash = await APP.hash(p1);
+
+        const { error } = await supabase
+            .from("user_passwords")
+            .update({ password_sha256: hash })
+            .eq("user_id", APP.userId);
+
+        if (error) {
+            console.error(error);
+            alert("Erro ao alterar password.");
+            return;
+        }
+
+        alert("Password alterada.");
+        document.getElementById("new-pass1").value = "";
+        document.getElementById("new-pass2").value = "";
     }
 
 };
@@ -142,6 +196,7 @@ window.addEventListener("load", () => {
             APP.showPage(btn.dataset.tab);
 
             if (btn.dataset.tab === "dashboard") await DASHBOARD.load();
+            if (btn.dataset.tab === "movimentos") await MOVIMENTOS.load();
             if (btn.dataset.tab === "debitos") await DEBITOS.load();
             if (btn.dataset.tab === "metas") await METAS.load();
         });
