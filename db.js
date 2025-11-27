@@ -11,8 +11,11 @@ const DB = {
     ============================================================ */
 
     async setSessionUser(userId) {
+        const ready = await APP.waitForSupabase();
+        if (!ready || !userId) return { error: { message: "Supabase indisponível" } };
+
         const client = APP.ensureClient();
-        if (!client || !userId) return { error: null };
+        if (!client) return { error: { message: "Supabase indisponível" } };
 
         const { error } = await client.rpc("set_app_user", { userid: userId });
 

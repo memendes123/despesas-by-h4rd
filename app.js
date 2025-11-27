@@ -13,50 +13,7 @@ const APP = {
     supabaseUrl: "https://wcdzwswjbhwkyfdqpner.supabase.co",
     supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjZHp3c3dqYmh3a3lmZHFwbmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NDExNjEsImV4cCI6MjA3OTMxNzE2MX0.PX6lM9MTiu1TcffOiGKw2jVQkl8x1pZBRY8HcDHseMs",
     supabaseClient: null,
-
-
-    /* ===========================================================
-       GARANTIR QUE O CLIENTE SUPABASE EXISTE
-    ============================================================ */
-    ensureClient() {
-        if (this.supabaseClient) return this.supabaseClient;
-
-        if (!window.supabase || typeof window.supabase.createClient !== "function") {
-            alert("Supabase não está disponível. Verifique a ligação ou recarregue a página.");
-            return null;
-        }
-
-        this.supabaseClient = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
-        // manter compatibilidade com os restantes módulos
-        window.supabase = this.supabaseClient;
-        return this.supabaseClient;
-    },
-
-    supabaseUrl: "https://wcdzwswjbhwkyfdqpner.supabase.co",
-    supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjZHp3c3dqYmh3a3lmZHFwbmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NDExNjEsImV4cCI6MjA3OTMxNzE2MX0.PX6lM9MTiu1TcffOiGKw2jVQkl8x1pZBRY8HcDHseMs",
-    supabaseClient: null,
-
-
-    /* ===========================================================
-       GARANTIR QUE O CLIENTE SUPABASE EXISTE
-    ============================================================ */
-    ensureClient() {
-        if (this.supabaseClient) return this.supabaseClient;
-
-        if (!window.supabase || typeof window.supabase.createClient !== "function") {
-            alert("Supabase não está disponível. Verifique a ligação ou recarregue a página.");
-            return null;
-        }
-
-        this.supabaseClient = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
-        // manter compatibilidade com os restantes módulos
-        window.supabase = this.supabaseClient;
-        return this.supabaseClient;
-    },
-
-    supabaseUrl: "https://wcdzwswjbhwkyfdqpner.supabase.co",
-    supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjZHp3c3dqYmh3a3lmZHFwbmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NDExNjEsImV4cCI6MjA3OTMxNzE2MX0.PX6lM9MTiu1TcffOiGKw2jVQkl8x1pZBRY8HcDHseMs",
-    supabaseClient: null,
+    supabaseReady: null,
 
 
     /* ===========================================================
@@ -78,14 +35,31 @@ const APP = {
 
 
     /* ===========================================================
-       GARANTIR QUE O CLIENTE SUPABASE EXISTE
+       AGUARDAR PELA SDK SUPABASE
     ============================================================ */
-    ensureClient() {
-        if (!window.supabase) {
-            alert("Ligação ao servidor indisponível. Recarregue a página.");
-            return false;
+    async waitForSupabase(timeoutMs = 5000) {
+        if (this.supabaseClient) return true;
+
+        if (window.supabase && typeof window.supabase.createClient === "function") {
+            return true;
         }
-        return true;
+
+        if (!this.supabaseReady) {
+            this.supabaseReady = new Promise(resolve => {
+                const start = performance.now();
+                const timer = setInterval(() => {
+                    const ready = window.supabase && typeof window.supabase.createClient === "function";
+                    const timedOut = performance.now() - start >= timeoutMs;
+
+                    if (ready || timedOut) {
+                        clearInterval(timer);
+                        resolve(!!ready);
+                    }
+                }, 100);
+            });
+        }
+
+        return await this.supabaseReady;
     },
 
 
@@ -93,6 +67,15 @@ const APP = {
        LOGIN
     ============================================================ */
     async appLogin(username, password) {
+
+        const ready = await APP.waitForSupabase();
+        if (!ready) {
+            alert("Supabase não carregou. Verifique a ligação à internet e recarregue a página.");
+            return;
+        }
+
+        const client = APP.ensureClient();
+        if (!client) return;
 
         const client = APP.ensureClient();
         if (!client) return;
@@ -197,6 +180,12 @@ const APP = {
             APP.user = session.user;
             APP.userId = session.id;
             APP.role = session.role;
+
+            const ready = await APP.waitForSupabase();
+            if (!ready) {
+                console.warn("Supabase não carregou — sessão não restaurada.");
+                return;
+            }
 
             const { error } = await DB.setSessionUser(APP.userId);
             if (error) {
@@ -343,26 +332,34 @@ const APP = {
 =========================================================== */
 window.addEventListener("load", () => {
 
-    const client = APP.ensureClient();
-    if (!client) return;
+    (async () => {
+        const ready = await APP.waitForSupabase();
+        if (!ready) {
+            alert("Supabase não carregou. Confirme a ligação à internet e volte a abrir a app.");
+            return;
+        }
+
+        const client = APP.ensureClient();
+        if (!client) return;
 
     const nav = document.querySelector(".bottom-nav");
 
-    nav.addEventListener("click", async (evt) => {
-        const btn = evt.target.closest("button");
-        if (!btn || !nav.contains(btn)) return;
+        nav.addEventListener("click", async (evt) => {
+            const btn = evt.target.closest("button");
+            if (!btn || !nav.contains(btn)) return;
 
-        const tab = btn.dataset.tab;
-        if (!tab) return;
+            const tab = btn.dataset.tab;
+            if (!tab) return;
 
-        APP.showPage(tab);
+            APP.showPage(tab);
 
-        if (tab === "dashboard") await DASHBOARD.load();
-        if (tab === "movimentos") await MOVIMENTOS.load();
-        if (tab === "categorias") await CATEGORIAS.load();
-        if (tab === "debitos") await DEBITOS.load();
-        if (tab === "metas") await METAS.load();
-    });
+            if (tab === "dashboard") await DASHBOARD.load();
+            if (tab === "movimentos") await MOVIMENTOS.load();
+            if (tab === "categorias") await CATEGORIAS.load();
+            if (tab === "debitos") await DEBITOS.load();
+            if (tab === "metas") await METAS.load();
+        });
 
-    APP.restoreSession();
+        APP.restoreSession();
+    })();
 });
