@@ -11,7 +11,10 @@ const DB = {
     ============================================================ */
 
     async getCategorias() {
-        const { data, error } = await supabase
+        const client = APP.ensureClient();
+        if (!client) return [];
+
+        const { data, error } = await client
             .from("categorias")
             .select("*")
             .order("nome");
@@ -21,7 +24,10 @@ const DB = {
     },
 
     async addCategoria(nome, userId) {
-        return await supabase
+        const client = APP.ensureClient();
+        if (!client) return { error: { message: "Supabase indisponível" } };
+
+        return await client
             .from("categorias")
             .insert({ nome, user_id: userId });
     },
@@ -38,7 +44,10 @@ const DB = {
             return;
         }
 
-        return await supabase
+        const client = APP.ensureClient();
+        if (!client) return { error: { message: "Supabase indisponível" } };
+
+        return await client
             .from("movimentos")
             .insert({
                 data,
@@ -57,7 +66,10 @@ const DB = {
 
         const mesStr = String(mes).padStart(2, "0");
 
-        const { data, error } = await supabase
+        const client = APP.ensureClient();
+        if (!client) return [];
+
+        const { data, error } = await client
             .from("movimentos")
             .select("*")
             .eq("user_id", APP.userId)
@@ -79,7 +91,10 @@ const DB = {
 
         if (!APP.userId) return [];
 
-        const { data, error } = await supabase
+        const client = APP.ensureClient();
+        if (!client) return [];
+
+        const { data, error } = await client
             .from("debitos")
             .select("*")
             .eq("user_id", APP.userId)
@@ -98,7 +113,10 @@ const DB = {
             return;
         }
 
-        return await supabase
+        const client = APP.ensureClient();
+        if (!client) return { error: { message: "Supabase indisponível" } };
+
+        return await client
             .from("debitos")
             .insert({
                 nome,
@@ -119,7 +137,10 @@ const DB = {
 
         if (!APP.userId) return [];
 
-        const { data, error } = await supabase
+        const client = APP.ensureClient();
+        if (!client) return [];
+
+        const { data, error } = await client
             .from("metas")
             .select("*")
             .eq("user_id", APP.userId)
@@ -135,7 +156,10 @@ const DB = {
 
         if (!APP.userId) return;
 
-        return await supabase
+        const client = APP.ensureClient();
+        if (!client) return { error: { message: "Supabase indisponível" } };
+
+        return await client
             .from("metas")
             .insert({
                 nome,
@@ -155,7 +179,10 @@ const DB = {
 
         if (!APP.userId) return null;
 
-        const { data, error } = await supabase
+        const client = APP.ensureClient();
+        if (!client) return null;
+
+        const { data, error } = await client
             .from("orcamentos")
             .select("*")
             .eq("user_id", APP.userId)
@@ -174,7 +201,10 @@ const DB = {
         if (!APP.userId) return;
 
         // Verificar se já existe
-        const { data: existing } = await supabase
+        const client = APP.ensureClient();
+        if (!client) return { error: { message: "Supabase indisponível" } };
+
+        const { data: existing } = await client
             .from("orcamentos")
             .select("*")
             .eq("user_id", APP.userId)
@@ -183,14 +213,14 @@ const DB = {
             .maybeSingle();
 
         if (existing) {
-            return await supabase
+            return await client
                 .from("orcamentos")
                 .update({ total })
                 .eq("id", existing.id);
         }
 
         // Criar novo
-        return await supabase
+        return await client
             .from("orcamentos")
             .insert({
                 user_id: APP.userId,
@@ -209,7 +239,10 @@ const DB = {
 
         if (!APP.userId) return null;
 
-        const { data, error } = await supabase
+        const client = APP.ensureClient();
+        if (!client) return null;
+
+        const { data, error } = await client
             .from("saldos")
             .select("*")
             .eq("user_id", APP.userId)
@@ -227,7 +260,10 @@ const DB = {
 
         if (!APP.userId) return;
 
-        const { data: existing } = await supabase
+        const client = APP.ensureClient();
+        if (!client) return { error: { message: "Supabase indisponível" } };
+
+        const { data: existing } = await client
             .from("saldos")
             .select("*")
             .eq("user_id", APP.userId)
@@ -236,13 +272,13 @@ const DB = {
             .maybeSingle();
 
         if (existing) {
-            return await supabase
+            return await client
                 .from("saldos")
                 .update({ saldo })
                 .eq("id", existing.id);
         }
 
-        return await supabase
+        return await client
             .from("saldos")
             .insert({
                 user_id: APP.userId,
