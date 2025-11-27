@@ -54,6 +54,28 @@ const APP = {
         return this.supabaseClient;
     },
 
+    supabaseUrl: "https://wcdzwswjbhwkyfdqpner.supabase.co",
+    supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjZHp3c3dqYmh3a3lmZHFwbmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NDExNjEsImV4cCI6MjA3OTMxNzE2MX0.PX6lM9MTiu1TcffOiGKw2jVQkl8x1pZBRY8HcDHseMs",
+    supabaseClient: null,
+
+
+    /* ===========================================================
+       GARANTIR QUE O CLIENTE SUPABASE EXISTE
+    ============================================================ */
+    ensureClient() {
+        if (this.supabaseClient) return this.supabaseClient;
+
+        if (!window.supabase || typeof window.supabase.createClient !== "function") {
+            alert("Supabase não está disponível. Verifique a ligação ou recarregue a página.");
+            return null;
+        }
+
+        this.supabaseClient = window.supabase.createClient(this.supabaseUrl, this.supabaseKey);
+        // manter compatibilidade com os restantes módulos
+        window.supabase = this.supabaseClient;
+        return this.supabaseClient;
+    },
+
 
     /* ===========================================================
        GARANTIR QUE O CLIENTE SUPABASE EXISTE
@@ -71,6 +93,9 @@ const APP = {
        LOGIN
     ============================================================ */
     async appLogin(username, password) {
+
+        const client = APP.ensureClient();
+        if (!client) return;
 
         const client = APP.ensureClient();
         if (!client) return;
@@ -130,7 +155,15 @@ const APP = {
             return alert("Password incorreta.");
         }
 
-        // 3) Guardar sessão localmente
+        // 3) Definir RLS para a sessão
+        const { error: rlsError } = await DB.setSessionUser(user.id);
+
+        if (rlsError) {
+            alert("Erro a preparar sessão segura.");
+            return;
+        }
+
+        // 4) Guardar sessão localmente
         APP.user = user.username;
         APP.userId = user.id;
         APP.role = user.role;
@@ -144,7 +177,7 @@ const APP = {
             role: APP.role
         }));
 
-        // 4) Carregar dashboard **APÓS DEFINIR userId**
+        // 5) Carregar dashboard **APÓS DEFINIR userId**
         APP.showPage("dashboard");
         await DASHBOARD.load();
     },
@@ -164,6 +197,11 @@ const APP = {
             APP.user = session.user;
             APP.userId = session.id;
             APP.role = session.role;
+
+            const { error } = await DB.setSessionUser(APP.userId);
+            if (error) {
+                console.warn("Não foi possível reativar RLS da sessão.");
+            }
 
             APP.ensureAdminTab();
             APP.renderContaInfo();

@@ -7,6 +7,20 @@
 const DB = {
 
     /* ===========================================================
+       DEFINIR UTILIZADOR PARA RLS
+    ============================================================ */
+
+    async setSessionUser(userId) {
+        const client = APP.ensureClient();
+        if (!client || !userId) return { error: null };
+
+        const { error } = await client.rpc("set_app_user", { userid: userId });
+
+        if (error) console.error("Erro setSessionUser:", error);
+        return { error };
+    },
+
+    /* ===========================================================
        CATEGORIAS
     ============================================================ */
 
