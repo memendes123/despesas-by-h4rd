@@ -108,9 +108,19 @@
 <div class="page hidden" id="page-categorias">
     <h2>Categorias</h2>
 
-    <button class="btn-success" onclick="ADMIN.listCategorias()">Gerir Categorias</button>
+    <div class="card">
+        <h3>As minhas categorias</h3>
+        <div id="cat-lista"></div>
+        <div class="cat-form">
+            <input id="cat-nome" placeholder="Nome da nova categoria">
+            <button class="btn-success" onclick="CATEGORIAS.criar()">Criar</button>
+            <button onclick="CATEGORIAS.load()">Recarregar</button>
+        </div>
+    </div>
 
-    <div id="cat-lista"></div>
+    <hr style="margin:20px 0">
+
+    <button class="btn-success" onclick="ADMIN.listCategorias()">Gerir Categorias (Admin)</button>
 </div>
 
 <!-- ===========================================================
@@ -214,27 +224,14 @@
     <button data-tab="conta">Conta</button>
 </div>
 
-<!-- ADMIN (mostrado por JS caso role=admin) -->
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    const nav = document.querySelector(".bottom-nav");
-    const btn = document.createElement("button");
-    btn.textContent = "Admin";
-    btn.dataset.tab = "admin";
-
-    // só aparece se for admin
-    setTimeout(()=>{
-        if (APP?.role === "admin") nav.appendChild(btn);
-    }, 500);
-});
-</script>
-
 <!-- ===========================================================
      JS FILES
 =========================================================== -->
 <script defer src="./app.js"></script>
 <script defer src="./auth.js"></script>
 <script defer src="./db.js"></script>
+<script defer src="./categorias.js"></script>
+<script defer src="./movimentos.js"></script>
 <script defer src="./dashboard.js"></script>
 <script defer src="./debitos.js"></script>
 <script defer src="./metas.js"></script>
