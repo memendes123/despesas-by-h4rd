@@ -13,23 +13,6 @@
 
     <!-- SUPABASE -->
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-
-    <script defer>
-        document.addEventListener("DOMContentLoaded", function () {
-
-            const supabaseUrl = "https://wcdzwswjbhwkyfdqpner.supabase.co";
-            const supabaseKey =
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjZHp3c3dqYmh3a3lmZHFwbmVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NDExNjEsImV4cCI6MjA3OTMxNzE2MX0.PX6lM9MTiu1TcffOiGKw2jVQkl8x1pZBRY8HcDHseMs";
-
-            if (!window.supabase || typeof window.supabase.createClient !== "function") {
-                console.error("Supabase SDK não carregou corretamente.");
-                alert("Erro a inicializar a ligação ao servidor. Recarregue a página.");
-                return;
-            }
-
-            window.supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-        });
-    </script>
 </head>
 
 <body>

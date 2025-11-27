@@ -16,9 +16,12 @@ const ADMIN = {
     },
 
     async loadUsers() {
+        const client = APP.ensureClient();
+        if (!client) return [];
+
         if (this.usersCache) return this.usersCache;
 
-        const { data, error } = await supabase
+        const { data, error } = await client
             .from("users")
             .select("id, username, role")
             .order("username");
@@ -62,7 +65,10 @@ const ADMIN = {
             </div>
         `;
 
-        const { data, error } = await supabase
+        const client = APP.ensureClient();
+        if (!client) return;
+
+        const { data, error } = await client
             .from("users")
             .select("*")
             .order("username");
@@ -95,9 +101,12 @@ const ADMIN = {
             return;
         }
 
+        const client = APP.ensureClient();
+        if (!client) return;
+
         const id = crypto.randomUUID().replace(/-/g, "");
 
-        const { error: e1 } = await supabase.from("users").insert({
+        const { error: e1 } = await client.from("users").insert({
             id,
             username,
             role
@@ -107,7 +116,7 @@ const ADMIN = {
 
         const hash = await APP.hash(pass);
 
-        const { error: e2 } = await supabase.from("user_passwords").insert({
+        const { error: e2 } = await client.from("user_passwords").insert({
             user_id: id,
             password_sha256: hash
         });
@@ -155,9 +164,12 @@ const ADMIN = {
             return;
         }
 
+        const client = APP.ensureClient();
+        if (!client) return;
+
         const hash = await APP.hash(p1);
 
-        const { error } = await supabase.from("user_passwords")
+        const { error } = await client.from("user_passwords")
             .update({ password_sha256: hash })
             .eq("user_id", userid);
 
@@ -195,9 +207,12 @@ const ADMIN = {
             </div>
         `;
 
+        const client = APP.ensureClient();
+        if (!client) return;
+
         const [users, categorias] = await Promise.all([
             this.loadUsers(),
-            supabase
+            client
                 .from("categorias")
                 .select("id, nome, user_id")
                 .order("nome")
@@ -243,7 +258,10 @@ const ADMIN = {
         if (!nome) return alert("Escreva o nome da categoria.");
         if (!userSel) return alert("Selecione um utilizador.");
 
-        const { error } = await supabase.from("categorias").insert({
+        const client = APP.ensureClient();
+        if (!client) return;
+
+        const { error } = await client.from("categorias").insert({
             nome,
             user_id: userSel
         });
@@ -279,7 +297,10 @@ const ADMIN = {
             </div>
         `;
 
-        const { data, error } = await supabase
+        const client = APP.ensureClient();
+        if (!client) return;
+
+        const { data, error } = await client
             .from("orcamentos")
             .select("*")
             .order("ano")

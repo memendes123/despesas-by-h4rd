@@ -16,6 +16,9 @@ const DASHBOARD = {
             return;
         }
 
+        const client = APP.ensureClient();
+        if (!client) return;
+
         const userId = APP.userId;
         const mes = APP.mesAtual;
         const ano = APP.anoAtual;
@@ -25,7 +28,7 @@ const DASHBOARD = {
         /* =======================================================
            1) CARREGAR MOVIMENTOS PARA O USER LOGADO
         ======================================================== */
-        const { data: movs, error: e1 } = await supabase
+        const { data: movs, error: e1 } = await client
             .from("movimentos")
             .select("id, data, descricao, valor, tipo, user_id")
             .eq("user_id", userId)
@@ -41,7 +44,7 @@ const DASHBOARD = {
         /* =======================================================
            2) CARREGAR ORÇAMENTO DO MÊS
         ======================================================== */
-        const { data: orc, error: e2 } = await supabase
+        const { data: orc, error: e2 } = await client
             .from("orcamentos")
             .select("*")
             .eq("user_id", userId)
