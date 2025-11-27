@@ -71,6 +71,8 @@ const APP = {
         APP.userId = user.id;
         APP.role = user.role;
 
+        APP.ensureAdminTab();
+
         localStorage.setItem("sessao", JSON.stringify({
             user: APP.user,
             id: APP.userId,
@@ -98,6 +100,8 @@ const APP = {
             APP.userId = session.id;
             APP.role = session.role;
 
+            APP.ensureAdminTab();
+
             APP.showPage("dashboard");
             await DASHBOARD.load();
 
@@ -117,6 +121,8 @@ const APP = {
         APP.userId = null;
         APP.role = null;
 
+        APP.ensureAdminTab();
+
         APP.showPage("login");
     },
 
@@ -127,6 +133,82 @@ const APP = {
     showPage(pg) {
         document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
         document.getElementById(`page-${pg}`).classList.remove("hidden");
+    },
+
+
+    /* ===========================================================
+       GERIR TAB DE ADMIN
+    ============================================================ */
+    ensureAdminTab() {
+        const nav = document.querySelector(".bottom-nav");
+        if (!nav) return;
+
+        const existing = nav.querySelector("button[data-tab='admin']");
+
+        if (APP.role === "admin") {
+            if (!existing) {
+                const btn = document.createElement("button");
+                btn.textContent = "Admin";
+                btn.dataset.tab = "admin";
+                nav.appendChild(btn);
+            }
+        } else if (existing) {
+            existing.remove();
+        }
+    },
+
+
+    /* ===========================================================
+       HASH UTIL
+    ============================================================ */
+    async hash(text) {
+        const enc = new TextEncoder();
+        const hashBuffer = await crypto.subtle.digest("SHA-256", enc.encode(text));
+        return [...new Uint8Array(hashBuffer)]
+            .map(b => b.toString(16).padStart(2, "0"))
+            .join("");
+    },
+
+
+    /* ===========================================================
+       ALTERAR PASSWORD DO UTILIZADOR ATUAL
+    ============================================================ */
+    async mudarPassword() {
+
+        if (!APP.userId) {
+            alert("Sessão expirada. Faça login novamente.");
+            return;
+        }
+
+        const p1 = document.getElementById("new-pass1").value.trim();
+        const p2 = document.getElementById("new-pass2").value.trim();
+
+        if (!p1 || !p2) {
+            alert("Preencha ambos os campos.");
+            return;
+        }
+
+        if (p1 !== p2) {
+            alert("As passwords não coincidem.");
+            return;
+        }
+
+        const hash = await APP.hash(p1);
+
+        const { error } = await supabase
+            .from("user_passwords")
+            .update({ password_sha256: hash })
+            .eq("user_id", APP.userId);
+
+        if (error) {
+            console.error(error);
+            alert("Erro ao alterar password.");
+            return;
+        }
+
+        alert("Password alterada.");
+        document.getElementById("new-pass1").value = "";
+        document.getElementById("new-pass2").value = "";
     }
 
 };
@@ -137,14 +219,21 @@ const APP = {
 =========================================================== */
 window.addEventListener("load", () => {
 
-    document.querySelectorAll(".bottom-nav button").forEach(btn => {
-        btn.addEventListener("click", async () => {
-            APP.showPage(btn.dataset.tab);
+    const nav = document.querySelector(".bottom-nav");
 
-            if (btn.dataset.tab === "dashboard") await DASHBOARD.load();
-            if (btn.dataset.tab === "debitos") await DEBITOS.load();
-            if (btn.dataset.tab === "metas") await METAS.load();
-        });
+    nav.addEventListener("click", async (evt) => {
+        const btn = evt.target.closest("button");
+        if (!btn || !nav.contains(btn)) return;
+
+        const tab = btn.dataset.tab;
+        if (!tab) return;
+
+        APP.showPage(tab);
+
+        if (tab === "dashboard") await DASHBOARD.load();
+        if (tab === "movimentos") await MOVIMENTOS.load();
+        if (tab === "debitos") await DEBITOS.load();
+        if (tab === "metas") await METAS.load();
     });
 
     APP.restoreSession();
